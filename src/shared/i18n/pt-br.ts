@@ -59,6 +59,7 @@ export const ptBR = {
     statTotalRoutines: 'Rotinas',
     noWorkoutsYet: 'Nenhum treino ainda',
     noMeasurementsYet: 'Sem medidas ainda',
+    workoutsCount_zero: '{{count}} treinos',
     workoutsCount_one: '{{count}} treino',
     workoutsCount_other: '{{count}} treinos',
     quickAddMeasurement: 'Nova medida',
