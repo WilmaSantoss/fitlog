@@ -72,11 +72,11 @@ export const optionalRepsString = z
       }
     }
   })
-  .transform((val) => {
+  .transform((val): string | null => {
     if (val === '') return null;
     const m = /^(\d+)(?:\s*-\s*(\d+))?$/.exec(val);
     if (!m) return null;
-    return m[2] !== undefined ? `${m[1]}-${m[2]}` : m[1];
+    return m[2] !== undefined ? `${m[1]}-${m[2]}` : (m[1] as string);
   });
 
 export const optionalString = z
