@@ -3,6 +3,7 @@ import { Sidebar } from '@/shared/ui/sidebar';
 import { BottomNav } from '@/shared/ui/bottom-nav';
 import { CelebrationOverlay } from '@/shared/ui/celebration-overlay';
 import { RestTimerBar } from '@/shared/ui/rest-timer-bar';
+import { UpdatePrompt } from '@/shared/ui/update-prompt';
 
 export function AppLayout() {
   return (
@@ -20,6 +21,7 @@ export function AppLayout() {
 
       <CelebrationOverlay />
       <RestTimerBar />
+      <UpdatePrompt />
     </div>
   );
 }
