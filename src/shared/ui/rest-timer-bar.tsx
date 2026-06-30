@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRestTimerStore } from '@/shared/state/rest-timer.store';
-import { playLevelUp } from '@/shared/lib/sound';
+import { playEventSound } from '@/shared/lib/sound';
 import { formatClock } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/cn';
 
@@ -27,7 +27,10 @@ export function RestTimerBar() {
   useEffect(() => {
     if (secondsLeft === 0 && !playedZeroRef.current) {
       playedZeroRef.current = true;
-      playLevelUp();
+      playEventSound('restDone');
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate([180, 100, 180, 100, 320]);
+      }
       const id = window.setTimeout(() => skip(), 1800);
       return () => window.clearTimeout(id);
     }

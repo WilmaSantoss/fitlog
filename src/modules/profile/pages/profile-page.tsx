@@ -9,9 +9,10 @@ import { Input } from '@/shared/ui/input';
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
 import { PageTitle } from '@/shared/ui/page-title';
 import { useProfileQuery, useUpdateProfile } from '../hooks/use-profile';
+import { SoundPreferences } from '../components/sound-preferences';
 import { useCurrentAccount, useLogout } from '@/modules/auth/hooks/use-auth';
 
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 
 export function ProfilePage() {
   const { t } = useTranslation();
@@ -126,6 +127,8 @@ export function ProfilePage() {
           </Button>
         </div>
       </Card>
+
+      <SoundPreferences />
 
       {statusMsg && (
         <p className="rounded-xl bg-success/10 px-3 py-2 text-center text-sm text-success">

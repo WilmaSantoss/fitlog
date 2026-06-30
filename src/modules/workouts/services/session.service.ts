@@ -16,6 +16,8 @@ import type {
 } from '../domain/workout.types';
 
 export type SessionStats = {
+  readonly completedExercises: number;
+  readonly totalExercises: number;
   readonly totalVolumeKg: number;
   readonly completedSets: number;
   readonly totalSets: number;
@@ -352,16 +354,23 @@ class SessionService implements ISessionService {
     let volume = 0;
     let completed = 0;
     let total = 0;
+    let completedExercises = 0;
     for (const ex of session.exercises) {
+      let exHasSet = false;
+      let exAllCompleted = true;
       for (const set of ex.sets) {
         total += 1;
+        exHasSet = true;
         if (set.completed) {
           completed += 1;
           if (set.actualWeightKg !== null && set.actualReps !== null) {
             volume += set.actualWeightKg * set.actualReps;
           }
+        } else {
+          exAllCompleted = false;
         }
       }
+      if (exHasSet && exAllCompleted) completedExercises += 1;
     }
     const endMs = session.finishedAt
       ? new Date(session.finishedAt).getTime()
@@ -371,6 +380,8 @@ class SessionService implements ISessionService {
       totalVolumeKg: Math.round(volume * 10) / 10,
       completedSets: completed,
       totalSets: total,
+      completedExercises,
+      totalExercises: session.exercises.length,
       durationSeconds: Number.isFinite(durationMs)
         ? Math.max(0, Math.round(durationMs / 1000))
         : null,

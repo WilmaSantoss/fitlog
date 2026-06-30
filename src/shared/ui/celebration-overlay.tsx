@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { Award } from 'lucide-react';
 import { useCelebrationStore } from '@/shared/state/celebration.store';
-import { playFanfare, playLevelUp } from '@/shared/lib/sound';
+import { playEventSound } from '@/shared/lib/sound';
 import { cn } from '@/shared/lib/cn';
 
 const CONFETTI_COLORS = [
@@ -50,8 +50,7 @@ export function CelebrationOverlay() {
 
   useEffect(() => {
     if (!current) return;
-    if (current.kind === 'pr') playFanfare();
-    else playLevelUp();
+    playEventSound('pr');
     const handle = window.setTimeout(dismiss, AUTO_DISMISS_MS);
     return () => window.clearTimeout(handle);
   }, [current, dismiss]);
