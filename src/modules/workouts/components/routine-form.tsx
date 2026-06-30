@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Save } from 'lucide-react';
+import { formatRestInput } from '@/shared/lib/format';
 import { Button } from '@/shared/ui/button';
 import { FormField } from '@/shared/ui/form-field';
 import { Input } from '@/shared/ui/input';
@@ -57,11 +58,11 @@ function buildDefaults(initial?: Routine): RoutineFormValues {
       id: ex.id,
       name: ex.name,
       notes: ex.notes ?? '',
-      restSeconds: toStr(ex.restSeconds),
+      restSeconds: formatRestInput(ex.restSeconds),
       sets: ex.sets.map((s) => ({
         id: s.id,
         type: s.type,
-        reps: toStr(s.reps),
+        reps: s.reps ?? '',
         weightKg: toStr(s.weightKg),
       })),
     })),

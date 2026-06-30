@@ -54,6 +54,53 @@
   button {
     cursor: pointer;
   }
+
+  @keyframes fitlog-confetti {
+    0% {
+      transform: translate3d(0, -10vh, 0) rotate(0deg);
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+    }
+    100% {
+      transform: translate3d(var(--drift, 0), 110vh, 0) rotate(720deg);
+      opacity: 0.85;
+    }
+  }
+
+  @keyframes fitlog-pop {
+    0% {
+      transform: scale(0.6) translateY(20px);
+      opacity: 0;
+    }
+    55% {
+      transform: scale(1.05) translateY(-4px);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fitlog-emoji {
+    0%,
+    100% {
+      transform: rotate(-12deg) scale(1);
+    }
+    50% {
+      transform: rotate(12deg) scale(1.15);
+    }
+  }
+
+  .animate-celebration-pop {
+    animation: fitlog-pop 380ms cubic-bezier(0.2, 0.8, 0.3, 1.4) both;
+  }
+
+  .animate-celebration-emoji {
+    animation: fitlog-emoji 420ms ease-in-out infinite;
+  }
   input,
   textarea,
   select {

@@ -30,6 +30,42 @@ export function formatInt(value: number | null | undefined): string {
   return nfInt.format(value);
 }
 
+export function formatClock(seconds: number): string {
+  const total = Math.max(0, Math.round(seconds));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  if (h > 0) return `${h}:${pad(m)}:${pad(s)}`;
+  return `${pad(m)}:${pad(s)}`;
+}
+
+export function parseRestSeconds(raw: string): number | null {
+  const v = raw.trim().toLowerCase().replace(/\s+/g, '');
+  if (v === '') return null;
+  if (/^\d+$/.test(v)) return Number(v);
+  const colon = /^(\d+):(\d+)$/.exec(v);
+  if (colon) return Number(colon[1]) * 60 + Number(colon[2]);
+  const min = /^(\d+)(?:m|min)(?:(\d+)s?)?$/.exec(v);
+  if (min) return Number(min[1]) * 60 + (min[2] ? Number(min[2]) : 0);
+  const sec = /^(\d+)s$/.exec(v);
+  if (sec) return Number(sec[1]);
+  return null;
+}
+
+export function isValidRestInput(raw: string): boolean {
+  if (raw.trim() === '') return true;
+  return parseRestSeconds(raw) !== null;
+}
+
+export function formatRestInput(seconds: number | null | undefined): string {
+  if (seconds === null || seconds === undefined) return '';
+  if (seconds < 60) return String(seconds);
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return s === 0 ? `${m}min` : `${m}:${String(s).padStart(2, '0')}`;
+}
+
 export function formatDuration(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
   const m = Math.floor(seconds / 60);

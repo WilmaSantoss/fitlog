@@ -14,7 +14,7 @@ import {
 } from '../hooks/use-routines';
 import { useStartSessionFromRoutine } from '../hooks/use-sessions';
 import { SetTypePill } from '../components/set-type-pill';
-import { formatKg, formatInt } from '@/shared/lib/format';
+import { formatKg, formatDuration } from '@/shared/lib/format';
 
 export function RoutineDetailPage() {
   const { t } = useTranslation();
@@ -132,7 +132,7 @@ export function RoutineDetailPage() {
               )}
               {exercise.restSeconds !== null && (
                 <p className="mt-1 text-xs text-accent">
-                  {t('workouts.restSeconds')}: {exercise.restSeconds}s
+                  {t('workouts.rest')}: {formatDuration(exercise.restSeconds)}
                 </p>
               )}
               <div className="mt-3 grid grid-cols-[3.5rem_1fr_1fr] gap-2 text-xs uppercase tracking-wide text-fg-subtle">
@@ -151,7 +151,7 @@ export function RoutineDetailPage() {
                     >
                       <SetTypePill type={set.type} workingNumber={workingN} />
                       <span className="text-fg">{formatKg(set.weightKg)}</span>
-                      <span className="text-fg">{formatInt(set.reps)}</span>
+                      <span className="text-fg">{set.reps ?? '—'}</span>
                     </li>
                   );
                 })}

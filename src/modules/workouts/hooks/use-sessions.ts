@@ -6,7 +6,53 @@ const KEYS = {
   finished: ['sessions', 'finished'] as const,
   active: ['sessions', 'active'] as const,
   detail: (id: string | undefined) => ['sessions', 'detail', id ?? null] as const,
+  previous: (sessionId: string | undefined) =>
+    ['sessions', 'previous', sessionId ?? null] as const,
+  exerciseSummaries: ['sessions', 'exerciseSummaries'] as const,
+  exerciseEvolution: (name: string) =>
+    ['sessions', 'exerciseEvolution', name.trim().toLowerCase()] as const,
 };
+
+export function usePreviousByExerciseQuery(sessionId: string | undefined) {
+  return useQuery({
+    queryKey: KEYS.previous(sessionId),
+    queryFn: () =>
+      sessionId ? sessionService.previousByExercise(sessionId) : new Map(),
+    enabled: !!sessionId,
+  });
+}
+
+export function useExerciseSummariesQuery() {
+  return useQuery({
+    queryKey: KEYS.exerciseSummaries,
+    queryFn: () => sessionService.exerciseSummaries(),
+  });
+}
+
+export function useExerciseEvolutionQuery(name: string | null) {
+  return useQuery({
+    queryKey: KEYS.exerciseEvolution(name ?? ''),
+    queryFn: () => (name ? sessionService.exerciseEvolution(name) : []),
+    enabled: !!name,
+  });
+}
+
+export function useRoutineExerciseAveragesQuery(
+  routineId: string | null,
+  excludeSessionId?: string,
+) {
+  return useQuery({
+    queryKey: [
+      'sessions',
+      'routineExerciseAverages',
+      routineId,
+      excludeSessionId ?? null,
+    ] as const,
+    queryFn: () =>
+      sessionService.routineExerciseAverages(routineId, excludeSessionId),
+    enabled: !!routineId,
+  });
+}
 
 export function useFinishedSessionsQuery() {
   return useQuery({
@@ -93,6 +139,12 @@ export function useFinishSession() {
       void qc.invalidateQueries({ queryKey: KEYS.detail(sessionId) });
       void qc.invalidateQueries({ queryKey: KEYS.finished });
       void qc.invalidateQueries({ queryKey: KEYS.active });
+      void qc.invalidateQueries({ queryKey: KEYS.exerciseSummaries });
+      void qc.invalidateQueries({ queryKey: ['sessions', 'exerciseEvolution'] });
+      void qc.invalidateQueries({ queryKey: ['sessions', 'previous'] });
+      void qc.invalidateQueries({
+        queryKey: ['sessions', 'routineExerciseAverages'],
+      });
     },
   });
 }

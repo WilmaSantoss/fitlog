@@ -4,10 +4,17 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/shared/lib/cn';
 import { SetTypePill } from './set-type-pill';
 import type { SessionSet } from '../domain/workout.types';
+import type { ExercisePr, PreviousSet } from '../services/session.service';
+import { useCelebrationStore } from '@/shared/state/celebration.store';
+import { useRestTimerStore } from '@/shared/state/rest-timer.store';
 
 type Props = {
   set: SessionSet;
   workingNumber?: number;
+  previous?: PreviousSet | null;
+  exerciseName: string;
+  restSeconds: number | null;
+  allTimePr?: ExercisePr | null;
   onChange: (patch: {
     actualWeightKg?: number | null;
     actualReps?: number | null;
@@ -26,8 +33,18 @@ function parseNum(v: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-export function SessionSetRow({ set, workingNumber, onChange }: Props) {
+export function SessionSetRow({
+  set,
+  workingNumber,
+  previous,
+  exerciseName,
+  restSeconds,
+  allTimePr,
+  onChange,
+}: Props) {
   const { t } = useTranslation();
+  const triggerCelebration = useCelebrationStore((s) => s.trigger);
+  const startRest = useRestTimerStore((s) => s.start);
   const [kg, setKg] = useState(toStr(set.actualWeightKg));
   const [reps, setReps] = useState(toStr(set.actualReps));
 
@@ -44,10 +61,9 @@ export function SessionSetRow({ set, workingNumber, onChange }: Props) {
     }
   }
 
-  const previousLabel =
-    set.plannedWeightKg !== null && set.plannedReps !== null
-      ? `${set.plannedWeightKg}kg × ${set.plannedReps}`
-      : '—';
+  const previousLabel = previous
+    ? `${previous.weightKg}kg × ${previous.reps}`
+    : '—';
 
   return (
     <div
@@ -59,9 +75,8 @@ export function SessionSetRow({ set, workingNumber, onChange }: Props) {
       <SetTypePill type={set.type} workingNumber={workingNumber} />
       <span className="truncate text-xs text-fg-subtle">{previousLabel}</span>
       <input
-        type="number"
+        type="text"
         inputMode="decimal"
-        step="0.5"
         value={kg}
         onChange={(e) => setKg(e.target.value)}
         onBlur={commit}
@@ -69,7 +84,7 @@ export function SessionSetRow({ set, workingNumber, onChange }: Props) {
         className="h-9 w-full rounded-md bg-surface-2 px-2 text-center text-sm text-fg focus:outline-none focus:ring-2 focus:ring-accent/40"
       />
       <input
-        type="number"
+        type="text"
         inputMode="numeric"
         value={reps}
         onChange={(e) => setReps(e.target.value)}
@@ -82,16 +97,51 @@ export function SessionSetRow({ set, workingNumber, onChange }: Props) {
         aria-label={t('common.confirm')}
         onClick={() => {
           commit();
-          onChange({ completed: !set.completed });
+          const willComplete = !set.completed;
+          if (willComplete && restSeconds && restSeconds > 0) {
+            startRest(restSeconds, exerciseName);
+          }
+          if (willComplete) {
+            const currentKg = parseNum(kg) ?? set.actualWeightKg;
+            const currentReps = parseNum(reps) ?? set.actualReps;
+            if (currentKg !== null && currentReps !== null) {
+              const beatPr =
+                allTimePr &&
+                (currentKg > allTimePr.weightKg ||
+                  (currentKg === allTimePr.weightKg &&
+                    currentReps > allTimePr.reps));
+              const beatLast =
+                previous &&
+                (currentKg > previous.weightKg ||
+                  (currentKg === previous.weightKg &&
+                    currentReps > previous.reps));
+              if (beatPr) {
+                triggerCelebration({
+                  kind: 'pr',
+                  title: exerciseName,
+                  detail: `${currentKg}kg × ${currentReps}`,
+                  emoji: '🏆',
+                });
+              } else if (beatLast) {
+                triggerCelebration({
+                  kind: 'beatLast',
+                  title: exerciseName,
+                  detail: `${currentKg}kg × ${currentReps} · antes ${previous.weightKg}kg × ${previous.reps}`,
+                  emoji: '💪',
+                });
+              }
+            }
+          }
+          onChange({ completed: willComplete });
         }}
         className={cn(
-          'inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors',
+          'inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-all active:scale-95',
           set.completed
-            ? 'bg-success text-on-accent'
-            : 'bg-surface-2 text-fg-subtle hover:text-fg',
+            ? 'border-success bg-success text-on-accent shadow-md shadow-success/40'
+            : 'border-line bg-surface-2 text-fg-muted hover:border-accent/60 hover:bg-accent/10 hover:text-accent',
         )}
       >
-        <Check className="h-4 w-4" />
+        <Check className={cn('h-5 w-5', set.completed && 'stroke-[3]')} />
       </button>
     </div>
   );

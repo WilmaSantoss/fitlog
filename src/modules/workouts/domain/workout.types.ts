@@ -10,7 +10,7 @@ export const SET_TYPES: readonly SetType[] = [
 export type PlannedSet = {
   readonly id: string;
   readonly type: SetType;
-  readonly reps: number | null;
+  readonly reps: string | null;
   readonly weightKg: number | null;
 };
 
@@ -36,7 +36,7 @@ export type Routine = {
 export type SessionSet = {
   readonly id: string;
   readonly type: SetType;
-  readonly plannedReps: number | null;
+  readonly plannedReps: string | null;
   readonly plannedWeightKg: number | null;
   readonly actualReps: number | null;
   readonly actualWeightKg: number | null;
@@ -49,6 +49,7 @@ export type SessionExercise = {
   readonly notes: string | null;
   readonly restSeconds: number | null;
   readonly sets: readonly SessionSet[];
+  readonly completedAt: string | null;
 };
 
 export type WorkoutSession = {

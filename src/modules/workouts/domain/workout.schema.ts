@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import {
   optionalDecimalString,
-  optionalIntString,
+  optionalRepsString,
+  optionalRestString,
   optionalString,
 } from '@/shared/lib/schema';
 import { SET_TYPES } from './workout.types';
@@ -9,7 +10,7 @@ import { SET_TYPES } from './workout.types';
 export const plannedSetSchema = z.object({
   id: z.string(),
   type: z.enum(SET_TYPES),
-  reps: optionalIntString,
+  reps: optionalRepsString,
   weightKg: optionalDecimalString,
 });
 
@@ -17,7 +18,7 @@ export const routineExerciseSchema = z.object({
   id: z.string(),
   name: z.string().trim().min(1, 'Obrigatório.'),
   notes: optionalString,
-  restSeconds: optionalIntString,
+  restSeconds: optionalRestString,
   sets: z.array(plannedSetSchema).min(1, 'Adicione pelo menos uma série.'),
 });
 

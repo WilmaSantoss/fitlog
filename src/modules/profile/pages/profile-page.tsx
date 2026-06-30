@@ -2,19 +2,16 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
-import { PageHeader } from '@/shared/ui/page-header';
 import { Card } from '@/shared/ui/card';
 import { Button } from '@/shared/ui/button';
 import { FormField } from '@/shared/ui/form-field';
 import { Input } from '@/shared/ui/input';
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
+import { PageTitle } from '@/shared/ui/page-title';
 import { useProfileQuery, useUpdateProfile } from '../hooks/use-profile';
-import {
-  useCurrentAccount,
-  useLogout,
-} from '@/modules/auth/hooks/use-auth';
+import { useCurrentAccount, useLogout } from '@/modules/auth/hooks/use-auth';
 
-const APP_VERSION = '0.1.0';
+const APP_VERSION = '1.2.0';
 
 export function ProfilePage() {
   const { t } = useTranslation();
@@ -29,12 +26,6 @@ export function ProfilePage() {
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
 
-  function handleLogout() {
-    logout();
-    setConfirmLogoutOpen(false);
-    navigate('/login', { replace: true });
-  }
-
   useEffect(() => {
     if (profileQ.data) {
       setName(profileQ.data.name);
@@ -44,30 +35,57 @@ export function ProfilePage() {
     }
   }, [profileQ.data]);
 
+  function handleLogout() {
+    logout();
+    setConfirmLogoutOpen(false);
+    navigate('/login', { replace: true });
+  }
+
+  function handleCancel() {
+    if (profileQ.data) {
+      setName(profileQ.data.name);
+      setHeightCm(
+        profileQ.data.heightCm === null ? '' : String(profileQ.data.heightCm),
+      );
+    }
+  }
+
   async function handleSave() {
     const parsed = heightCm.trim();
     const heightNum = parsed === '' ? null : Number(parsed);
     await updateMutation.mutateAsync({
       name,
-      heightCm: heightNum !== null && Number.isFinite(heightNum) ? heightNum : null,
+      heightCm:
+        heightNum !== null && Number.isFinite(heightNum) ? heightNum : null,
     });
     setStatusMsg(t('profile.saved'));
   }
 
+  const displayName =
+    profileQ.data?.name?.trim() ||
+    (email ? email.split('@')[0] : '') ||
+    t('home.greetingAnon');
+  const initial = displayName.charAt(0).toUpperCase() || 'F';
+
   return (
-    <>
-      <PageHeader title={t('profile.title')} />
+    <div className="flex flex-col gap-6 pt-6 md:pt-2">
+      <PageTitle title={t('profile.title')} subtitle={t('profile.subtitle')} />
 
       {email && (
-        <Card className="mb-4 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs uppercase tracking-wide text-fg-subtle">
-              {t('auth.loggedInAs')}
-            </p>
-            <p className="truncate text-base font-medium text-fg">{email}</p>
+        <Card className="flex items-center justify-between gap-4 p-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent text-base font-semibold text-on-accent">
+              {initial}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-base font-semibold text-fg">
+                {displayName}
+              </p>
+              <p className="truncate text-sm text-fg-muted">{email}</p>
+            </div>
           </div>
           <Button
-            variant="ghost"
+            variant="secondary"
             size="sm"
             leadingIcon={<LogOut className="h-4 w-4" />}
             onClick={() => setConfirmLogoutOpen(true)}
@@ -77,8 +95,8 @@ export function ProfilePage() {
         </Card>
       )}
 
-      <Card className="mb-4 flex flex-col gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-fg-muted">
+      <Card className="flex flex-col gap-4 p-5">
+        <h2 className="text-[11px] font-medium uppercase tracking-wider text-fg-subtle">
           {t('profile.settings')}
         </h2>
         <FormField label={t('profile.name')} htmlFor="name">
@@ -99,23 +117,30 @@ export function ProfilePage() {
             onChange={(e) => setHeightCm(e.target.value)}
           />
         </FormField>
-        <Button onClick={handleSave} disabled={updateMutation.isPending}>
-          {t('common.save')}
-        </Button>
-      </Card>
-
-      <Card className="text-sm text-fg-muted">
-        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-fg-muted">
-          {t('profile.about')}
-        </h2>
-        {t('profile.aboutBody', { version: APP_VERSION })}
+        <div className="flex items-center justify-end gap-2 pt-1">
+          <Button variant="secondary" onClick={handleCancel}>
+            {t('common.cancel')}
+          </Button>
+          <Button onClick={handleSave} disabled={updateMutation.isPending}>
+            {t('common.save')}
+          </Button>
+        </div>
       </Card>
 
       {statusMsg && (
-        <p className="mt-4 rounded-xl bg-success/10 px-3 py-2 text-center text-sm text-success">
+        <p className="rounded-xl bg-success/10 px-3 py-2 text-center text-sm text-success">
           {statusMsg}
         </p>
       )}
+
+      <div className="flex items-start gap-3 px-1 text-xs">
+        <p className="font-medium uppercase tracking-wider text-fg-subtle">
+          {t('profile.about')}
+        </p>
+        <p className="text-fg-muted">
+          {t('profile.aboutBody', { version: APP_VERSION })}
+        </p>
+      </div>
 
       <ConfirmDialog
         open={confirmLogoutOpen}
@@ -124,6 +149,6 @@ export function ProfilePage() {
         onConfirm={handleLogout}
         onCancel={() => setConfirmLogoutOpen(false)}
       />
-    </>
+    </div>
   );
 }

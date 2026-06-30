@@ -36,7 +36,7 @@ export function ExerciseBlock({
 }: Props) {
   const { t } = useTranslation();
 
-  const { fields, append } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control,
     name: `exercises.${index}.sets` as const,
   });
@@ -73,17 +73,16 @@ export function ExerciseBlock({
 
       <div className="grid grid-cols-2 gap-3">
         <FormField
-          label={t('workouts.restSeconds')}
+          label={t('workouts.rest')}
           htmlFor={`exercises.${index}.restSeconds`}
           optional
           error={exerciseErrors?.restSeconds?.message}
         >
           <Input
             id={`exercises.${index}.restSeconds`}
-            type="number"
-            inputMode="numeric"
-            min={0}
-            placeholder="90"
+            type="text"
+            inputMode="text"
+            placeholder="90 ou 1:30"
             invalid={!!exerciseErrors?.restSeconds}
             {...register(`exercises.${index}.restSeconds` as const)}
           />
@@ -103,10 +102,11 @@ export function ExerciseBlock({
       </div>
 
       <div>
-        <div className="mb-2 grid grid-cols-[3.5rem_1fr_1fr] items-center gap-2 px-1 text-xs uppercase tracking-wide text-fg-subtle">
+        <div className="mb-2 grid grid-cols-[3.5rem_1fr_1fr_2.25rem] items-center gap-2 px-1 text-xs uppercase tracking-wide text-fg-subtle">
           <span>Tipo</span>
           <span>{t('workouts.weight')}</span>
           <span>{t('workouts.reps')}</span>
+          <span />
         </div>
         <ul className="flex flex-col gap-2">
           {fields.map((field, setIndex) => {
@@ -114,7 +114,7 @@ export function ExerciseBlock({
             return (
               <li
                 key={field.id}
-                className="grid grid-cols-[3.5rem_1fr_1fr] items-center gap-2"
+                className="grid grid-cols-[3.5rem_1fr_1fr_2.25rem] items-center gap-2"
               >
                 <Select
                   aria-label={t('workouts.setType')}
@@ -130,8 +130,7 @@ export function ExerciseBlock({
                   ))}
                 </Select>
                 <Input
-                  type="number"
-                  step="0.5"
+                  type="text"
                   inputMode="decimal"
                   placeholder="kg"
                   invalid={!!setErrors?.weightKg}
@@ -140,14 +139,22 @@ export function ExerciseBlock({
                   )}
                 />
                 <Input
-                  type="number"
-                  inputMode="numeric"
-                  placeholder="reps"
+                  type="text"
+                  inputMode="text"
+                  placeholder="8 ou 5-9"
                   invalid={!!setErrors?.reps}
                   {...register(
                     `exercises.${index}.sets.${setIndex}.reps` as const,
                   )}
                 />
+                <IconButton
+                  label={t('workouts.removeSet')}
+                  tone="danger"
+                  className="h-9 w-9"
+                  onClick={() => remove(setIndex)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </IconButton>
               </li>
             );
           })}

@@ -11,9 +11,9 @@ import { RoutinesListPage } from '@/modules/workouts/pages/routines-list-page';
 import { RoutineFormPage } from '@/modules/workouts/pages/routine-form-page';
 import { RoutineDetailPage } from '@/modules/workouts/pages/routine-detail-page';
 import { SessionPage } from '@/modules/workouts/pages/session-page';
-import { SessionsHistoryPage } from '@/modules/workouts/pages/sessions-history-page';
 import { SessionDetailPage } from '@/modules/workouts/pages/session-detail-page';
 import { ProfilePage } from '@/modules/profile/pages/profile-page';
+import { ProgressPage } from '@/modules/progress/pages/progress-page';
 
 const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -32,13 +32,14 @@ const router = createBrowserRouter([
           { path: 'treino/:routineId/editar', element: <RoutineFormPage /> },
           { path: 'treino/:routineId', element: <RoutineDetailPage /> },
           { path: 'treino/sessao/:sessionId', element: <SessionPage /> },
-          { path: 'treino/historico', element: <SessionsHistoryPage /> },
           { path: 'treino/historico/:sessionId', element: <SessionDetailPage /> },
 
           { path: 'medidas', element: <MeasurementsListPage /> },
           { path: 'medidas/nova', element: <MeasurementFormPage /> },
           { path: 'medidas/:measurementId/editar', element: <MeasurementFormPage /> },
           { path: 'medidas/evolucao', element: <MeasurementEvolutionPage /> },
+
+          { path: 'progresso', element: <ProgressPage /> },
 
           { path: 'perfil', element: <ProfilePage /> },
         ],

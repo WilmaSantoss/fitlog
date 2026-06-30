@@ -14,7 +14,7 @@ import type {
 export type PlannedSetInput = {
   readonly id?: string;
   readonly type: SetType;
-  readonly reps: number | null;
+  readonly reps: string | null;
   readonly weightKg: number | null;
 };
 

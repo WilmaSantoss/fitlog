@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
-import { Dumbbell, Plus, Ruler } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Dumbbell, Play, Plus, Ruler } from 'lucide-react';
 import { Card } from '@/shared/ui/card';
 import { Button } from '@/shared/ui/button';
+import { PageTitle } from '@/shared/ui/page-title';
 import { useMeasurementsQuery } from '@/modules/measurements/hooks/use-measurements';
 import { useRoutinesQuery } from '@/modules/workouts/hooks/use-routines';
 import {
@@ -15,12 +16,55 @@ import { useProfileQuery } from '@/modules/profile/hooks/use-profile';
 import { formatRelative, isThisWeek } from '@/shared/lib/date';
 import { formatKg } from '@/shared/lib/format';
 import type { Routine } from '@/modules/workouts/domain/workout.types';
+import { cn } from '@/shared/lib/cn';
 
-function StatCard({ label, value }: { label: string; value: string }) {
+const WEEK_GOAL = 4;
+
+type StatProps = {
+  label: string;
+  value: string;
+  secondary?: string;
+  secondaryTone?: 'muted' | 'accent';
+  onSecondaryClick?: () => void;
+};
+
+function Stat({
+  label,
+  value,
+  secondary,
+  secondaryTone = 'muted',
+  onSecondaryClick,
+}: StatProps) {
   return (
-    <Card className="flex flex-col gap-1.5">
-      <p className="text-xs uppercase tracking-wide text-fg-subtle">{label}</p>
-      <p className="text-xl font-semibold text-fg">{value}</p>
+    <Card className="flex flex-col gap-2 p-5">
+      <p className="text-[11px] font-medium uppercase tracking-wider text-fg-subtle">
+        {label}
+      </p>
+      <p className="text-2xl font-semibold text-fg">{value}</p>
+      {secondary &&
+        (onSecondaryClick ? (
+          <button
+            type="button"
+            onClick={onSecondaryClick}
+            className={cn(
+              'mt-auto self-start text-xs font-medium transition-colors',
+              secondaryTone === 'accent'
+                ? 'text-accent hover:text-accent-hover'
+                : 'text-fg-muted hover:text-fg',
+            )}
+          >
+            {secondary}
+          </button>
+        ) : (
+          <p
+            className={cn(
+              'mt-auto text-xs',
+              secondaryTone === 'accent' ? 'text-accent' : 'text-fg-muted',
+            )}
+          >
+            {secondary}
+          </p>
+        ))}
     </Card>
   );
 }
@@ -35,8 +79,8 @@ export function HomePage() {
   const profileQ = useProfileQuery();
   const startMutation = useStartSessionFromRoutine();
 
-  const lastMeasurement = useMemo(
-    () => measurementsQ.data?.find((m) => m.weightKg !== null),
+  const lastWeight = useMemo(
+    () => measurementsQ.data?.find((m) => m.weightKg !== null) ?? null,
     [measurementsQ.data],
   );
   const lastSession = finishedQ.data?.[0];
@@ -50,6 +94,7 @@ export function HomePage() {
   const activeSession = activeQ.data?.[0];
 
   const userName = profileQ.data?.name?.trim();
+  const routines = routinesQ.data ?? [];
 
   async function handleStart(routine: Routine) {
     const session = await startMutation.mutateAsync(routine.id);
@@ -57,22 +102,13 @@ export function HomePage() {
   }
 
   return (
-    <div className="flex flex-col gap-5 pt-4">
-      <header>
-        <h1 className="text-2xl font-semibold text-fg">
-          {userName ? (
-            <>
-              {t('home.greetingAnon')},{' '}
-              <span className="bg-gradient-to-r from-accent to-dropset bg-clip-text text-transparent">
-                {userName}
-              </span>
-            </>
-          ) : (
-            t('home.greetingAnon')
-          )}
-        </h1>
-        <p className="text-sm text-fg-muted">{t('app.tagline')}</p>
-      </header>
+    <div className="flex flex-col gap-6 pt-6 md:pt-2">
+      <PageTitle
+        title={
+          userName ? `${t('home.greetingAnon')}, ${userName}` : t('home.greetingAnon')
+        }
+        subtitle={t('app.tagline')}
+      />
 
       {activeSession && (
         <Card
@@ -95,31 +131,47 @@ export function HomePage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <StatCard
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Stat
           label={t('home.statCurrentWeight')}
-          value={lastMeasurement ? formatKg(lastMeasurement.weightKg) : '—'}
+          value={lastWeight ? formatKg(lastWeight.weightKg) : '—'}
+          secondary={
+            lastWeight
+              ? formatRelative(lastWeight.recordedAt)
+              : t('home.registerWeight')
+          }
+          secondaryTone={lastWeight ? 'muted' : 'accent'}
+          onSecondaryClick={
+            lastWeight ? undefined : () => navigate('/medidas/nova')
+          }
         />
-        <StatCard
+        <Stat
           label={t('home.statThisWeek')}
           value={t('home.workoutsCount', { count: weekCount })}
+          secondary={t('home.weekGoal', { goal: WEEK_GOAL })}
         />
-        <StatCard
+        <Stat
           label={t('home.statLastWorkout')}
           value={
             lastSession
+              ? lastSession.routineName
+              : t('home.statNoWorkoutsShort')
+          }
+          secondary={
+            lastSession
               ? formatRelative(lastSession.finishedAt ?? lastSession.startedAt)
-              : t('home.noWorkoutsYet')
+              : t('home.startToday')
           }
         />
-        <StatCard
+        <Stat
           label={t('home.statTotalRoutines')}
-          value={String(routinesQ.data?.length ?? 0)}
+          value={String(routines.length)}
+          secondary={t('home.routinesActive', { count: routines.length })}
         />
       </div>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-fg-muted">
+      <section className="flex flex-col gap-3">
+        <h2 className="text-[11px] font-medium uppercase tracking-wider text-fg-subtle">
           {t('home.sectionShortcuts')}
         </h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -147,58 +199,56 @@ export function HomePage() {
         </div>
       </section>
 
-      {routinesQ.data && routinesQ.data.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-fg-muted">
+      {routines.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-[11px] font-medium uppercase tracking-wider text-fg-subtle">
             {t('home.sectionRecentRoutines')}
           </h2>
-          <ul className="flex flex-col gap-2">
-            {routinesQ.data.slice(0, 3).map((routine) => (
-              <li key={routine.id}>
-                <Card className="flex items-center justify-between gap-3">
-                  <Link
-                    to={`/treino/${routine.id}`}
-                    className="min-w-0 flex-1"
+          <ul className="flex flex-col gap-3">
+            {routines.slice(0, 3).map((routine) => {
+              const exerciseNames = routine.exercises
+                .slice(0, 2)
+                .map((e) => e.name)
+                .join(', ');
+              return (
+                <li key={routine.id}>
+                  <Card
+                    interactive
+                    onClick={() => navigate(`/treino/${routine.id}`)}
+                    className="flex items-center justify-between gap-3 p-4"
                   >
-                    <p className="truncate text-base font-semibold text-fg">
-                      {routine.name}
-                    </p>
-                    <p className="truncate text-xs text-fg-muted">
-                      {routine.exercises.length}{' '}
-                      {routine.exercises.length === 1
-                        ? 'exercício'
-                        : 'exercícios'}
-                    </p>
-                  </Link>
-                  <Button
-                    size="sm"
-                    onClick={() => handleStart(routine)}
-                    disabled={routine.exercises.length === 0}
-                  >
-                    {t('workouts.startRoutine')}
-                  </Button>
-                </Card>
-              </li>
-            ))}
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent/15 text-accent">
+                        <Dumbbell className="h-5 w-5" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-base font-semibold text-fg">
+                          {routine.name}
+                        </p>
+                        <p className="truncate text-xs text-fg-muted">
+                          {t('home.exercisesCount', {
+                            count: routine.exercises.length,
+                          })}
+                          {exerciseNames && ` · ${exerciseNames}`}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStart(routine);
+                      }}
+                      disabled={routine.exercises.length === 0}
+                      leadingIcon={<Play className="h-3.5 w-3.5" />}
+                    >
+                      {t('home.startShort')}
+                    </Button>
+                  </Card>
+                </li>
+              );
+            })}
           </ul>
-        </section>
-      )}
-
-      {lastMeasurement && (
-        <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-fg-muted">
-            {t('home.sectionLatestMeasurement')}
-          </h2>
-          <Link to={`/medidas/${lastMeasurement.id}/editar`}>
-            <Card interactive>
-              <p className="text-xs text-fg-subtle">
-                {formatRelative(lastMeasurement.recordedAt)}
-              </p>
-              <p className="mt-1 text-xl font-semibold text-fg">
-                {formatKg(lastMeasurement.weightKg)}
-              </p>
-            </Card>
-          </Link>
         </section>
       )}
     </div>

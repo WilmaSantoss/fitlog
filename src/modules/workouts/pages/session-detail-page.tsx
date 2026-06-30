@@ -31,13 +31,13 @@ export function SessionDetailPage() {
     if (!id) return;
     await deleteMutation.mutateAsync(id);
     setConfirmDeleteOpen(false);
-    navigate('/treino/historico');
+    navigate('/treino?tab=history');
   }
 
   if (detail.isLoading) {
     return (
       <>
-        <PageHeader title={t('workouts.title')} back="/treino/historico" />
+        <PageHeader title={t('workouts.title')} back="/treino?tab=history" />
         <p className="py-8 text-center text-sm text-fg-muted">
           {t('common.loading')}
         </p>
@@ -48,7 +48,7 @@ export function SessionDetailPage() {
   if (!session) {
     return (
       <>
-        <PageHeader title={t('workouts.title')} back="/treino/historico" />
+        <PageHeader title={t('workouts.title')} back="/treino?tab=history" />
         <p className="py-8 text-center text-sm text-fg-muted">
           {t('common.empty')}
         </p>
@@ -63,7 +63,7 @@ export function SessionDetailPage() {
       <PageHeader
         title={session.routineName}
         subtitle={`${formatDate(date)} · ${formatTime(date)}`}
-        back="/treino/historico"
+        back="/treino?tab=history"
         actions={
           <IconButton
             label={t('common.delete')}
@@ -142,7 +142,9 @@ export function SessionDetailPage() {
                           {formatKg(set.actualWeightKg ?? set.plannedWeightKg)}
                         </span>
                         <span className="text-fg">
-                          {formatInt(set.actualReps ?? set.plannedReps)}
+                          {set.actualReps !== null
+                            ? formatInt(set.actualReps)
+                            : (set.plannedReps ?? '—')}
                         </span>
                         <span
                           className={
