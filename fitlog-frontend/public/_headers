@@ -1,0 +1,12 @@
+# Service Worker e registrador: nunca cachear, pra atualização aparecer rápido
+/sw.js
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/registerSW.js
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/workbox-*.js
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/manifest.webmanifest
+  Cache-Control: no-cache, max-age=0
