@@ -48,8 +48,9 @@ export function UpdatePrompt() {
   return (
     <div
       role="alert"
-      className="fixed inset-x-0 top-3 z-[70] flex justify-center px-3"
-      style={{ top: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
+      // No mobile senta acima do bottom-nav (~64px + safe-area).
+      // No desktop, sem bottom-nav, cola ~1rem do fundo.
+      className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-[70] flex justify-center px-3 md:bottom-4"
     >
       <div className="pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-xl border border-accent/40 bg-surface px-4 py-3 shadow-2xl shadow-black/40">
         <RefreshCw className="h-5 w-5 shrink-0 text-accent" />
