@@ -2,75 +2,18 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRestTimerStore } from '@/shared/state/rest-timer.store';
 import { playEventSound } from '@/shared/lib/sound';
+import { cancelRestEndNotification } from '@/shared/lib/push';
 import { formatClock } from '@/shared/lib/format';
-import { getSilentAudio } from '@/shared/lib/silent-audio';
 import { cn } from '@/shared/lib/cn';
-
-function setLockScreenMetadata(
-  exerciseName: string | null,
-  secondsLeft: number,
-  total: number,
-): void {
-  if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
-  try {
-    navigator.mediaSession.metadata = new window.MediaMetadata({
-      title: exerciseName ?? 'Descanso',
-      artist: `Descanso · ${formatClock(secondsLeft)}`,
-      album: 'Fitlog',
-      artwork: [
-        { src: '/pwa-192.svg', sizes: '192x192', type: 'image/svg+xml' },
-        { src: '/pwa-512.svg', sizes: '512x512', type: 'image/svg+xml' },
-      ],
-    });
-    navigator.mediaSession.playbackState = 'playing';
-    if (typeof navigator.mediaSession.setPositionState === 'function') {
-      try {
-        navigator.mediaSession.setPositionState({
-          duration: Math.max(total, 1),
-          position: Math.max(0, total - secondsLeft),
-          playbackRate: 1,
-        });
-      } catch {
-        // ignorar — alguns browsers reclamam de valores
-      }
-    }
-  } catch {
-    // MediaMetadata pode não existir em browsers antigos
-  }
-}
-
-function clearLockScreenMetadata(): void {
-  if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
-  navigator.mediaSession.metadata = null;
-  navigator.mediaSession.playbackState = 'none';
-  for (const action of [
-    'play',
-    'pause',
-    'stop',
-    'seekbackward',
-    'seekforward',
-  ] as const) {
-    try {
-      navigator.mediaSession.setActionHandler(action, null);
-    } catch {
-      // ignorar
-    }
-  }
-}
 
 export function RestTimerBar() {
   const { t } = useTranslation();
   const secondsLeft = useRestTimerStore((s) => s.secondsLeft);
   const total = useRestTimerStore((s) => s.totalSeconds);
-  const exerciseName = useRestTimerStore((s) => s.exerciseName);
   const tick = useRestTimerStore((s) => s.tick);
   const adjust = useRestTimerStore((s) => s.adjust);
   const skip = useRestTimerStore((s) => s.skip);
   const playedZeroRef = useRef(false);
-  const adjustRef = useRef(adjust);
-  const skipRef = useRef(skip);
-  adjustRef.current = adjust;
-  skipRef.current = skip;
 
   // Tick a cada segundo enquanto o timer está rodando
   useEffect(() => {
@@ -95,57 +38,17 @@ export function RestTimerBar() {
     }
   }, [secondsLeft, skip]);
 
-  // MediaSession + áudio silencioso pra aparecer na tela de bloqueio
-  useEffect(() => {
-    const active = secondsLeft !== null;
-    if (!active) {
-      const audio = getSilentAudio();
-      if (audio) {
-        audio.pause();
-        audio.currentTime = 0;
-      }
-      clearLockScreenMetadata();
-      return;
-    }
-    const audio = getSilentAudio();
-    if (audio) {
-      void audio.play().catch(() => {
-        // se falhar (autoplay), só ignora — controles não aparecerão
-      });
-    }
-    if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
-      try {
-        navigator.mediaSession.setActionHandler('seekbackward', () =>
-          adjustRef.current(-15),
-        );
-      } catch {
-        // ignorar
-      }
-      try {
-        navigator.mediaSession.setActionHandler('seekforward', () =>
-          adjustRef.current(15),
-        );
-      } catch {
-        // ignorar
-      }
-      try {
-        navigator.mediaSession.setActionHandler('stop', () => skipRef.current());
-      } catch {
-        // ignorar
-      }
-    }
-  }, [secondsLeft !== null]);
-
-  // Atualiza o título/posição na tela de bloqueio a cada segundo
-  useEffect(() => {
-    if (secondsLeft === null) return;
-    setLockScreenMetadata(exerciseName, secondsLeft, total);
-  }, [secondsLeft, total, exerciseName]);
-
   if (secondsLeft === null) return null;
 
   const progress = total > 0 ? 1 - secondsLeft / total : 0;
   const isDone = secondsLeft === 0;
+
+  // Skip manual: cancela a notif agendada antes de zerar o store
+  const handleSkip = () => {
+    const sessionId = useRestTimerStore.getState().restSessionId;
+    if (sessionId) void cancelRestEndNotification(sessionId);
+    skip();
+  };
 
   return (
     <div
@@ -189,7 +92,7 @@ export function RestTimerBar() {
         </button>
         <button
           type="button"
-          onClick={skip}
+          onClick={handleSkip}
           className="h-10 rounded-lg bg-accent px-4 text-sm font-semibold text-on-accent transition-colors hover:bg-accent/90"
         >
           {t('workouts.restSkip')}

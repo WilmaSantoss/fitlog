@@ -7,6 +7,7 @@ import type { SessionSet } from '../domain/workout.types';
 import type { ExercisePr, PreviousSet } from '../services/session.service';
 import { useCelebrationStore } from '@/shared/state/celebration.store';
 import { useRestTimerStore } from '@/shared/state/rest-timer.store';
+import { scheduleRestEndNotification } from '@/shared/lib/push';
 
 type Props = {
   set: SessionSet;
@@ -130,6 +131,10 @@ export function SessionSetRow({
 
           if (willComplete && restSeconds && restSeconds > 0) {
             startRest(restSeconds, exerciseName);
+            const sessionId = useRestTimerStore.getState().restSessionId;
+            if (sessionId) {
+              void scheduleRestEndNotification(sessionId, restSeconds, exerciseName);
+            }
           }
           if (willComplete) {
             const currentKg = newKg ?? set.actualWeightKg;
