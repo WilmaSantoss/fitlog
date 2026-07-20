@@ -27,6 +27,7 @@ export type RoutineExercise = {
   readonly name: string;
   readonly notes: string | null;
   readonly restSeconds: number | null;
+  readonly videoUrl: string | null;
   readonly sets: readonly PlannedSet[];
 };
 
@@ -56,6 +57,7 @@ export type SessionExercise = {
   readonly name: string;
   readonly notes: string | null;
   readonly restSeconds: number | null;
+  readonly videoUrl: string | null;
   readonly sets: readonly SessionSet[];
   readonly completedAt: string | null;
 };

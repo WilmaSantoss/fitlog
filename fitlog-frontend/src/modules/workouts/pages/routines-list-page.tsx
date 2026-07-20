@@ -61,22 +61,9 @@ export function RoutinesListPage() {
             count: finishedSessions.length,
           }),
         })}
-        actions={
-          tab === 'routines' ? (
-            <Button
-              leadingIcon={<Plus className="h-4 w-4" />}
-              onClick={() => navigate('/treino/novo')}
-            >
-              {t('workouts.newRoutine')}
-            </Button>
-          ) : null
-        }
       />
 
-      <div
-        role="tablist"
-        className="inline-flex w-full max-w-xs rounded-lg border border-line/60 bg-surface p-1 text-sm"
-      >
+      <div role="tablist" className="flex items-center gap-6 border-b border-line/40">
         <TabButton
           active={tab === 'routines'}
           onClick={() => setTab('routines')}
@@ -122,8 +109,10 @@ function TabButton({
       aria-selected={active}
       onClick={onClick}
       className={cn(
-        'flex-1 rounded-md px-3 py-1.5 font-medium transition-colors',
-        active ? 'bg-accent text-on-accent' : 'text-fg-muted hover:text-fg',
+        '-mb-px border-b-2 pb-3 text-sm font-medium transition-colors',
+        active
+          ? 'border-accent text-fg'
+          : 'border-transparent text-fg-muted hover:text-fg',
       )}
     >
       {label}
@@ -195,68 +184,89 @@ function RoutinesTab({
 
       {routines.length > 0 && (
         <ul className="flex flex-col gap-3">
-          {routines.map((routine) => {
-            const exerciseChips = routine.exercises.slice(0, 2);
-            return (
-              <li key={routine.id}>
-                <Card
-                  interactive
-                  onClick={() => navigate(`/treino/${routine.id}`)}
-                  className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="min-w-0 flex-1">
-                    <h3 className="truncate text-lg font-semibold text-fg">
-                      {routine.name}
-                    </h3>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      {exerciseChips.map((ex, idx) => (
-                        <span
-                          key={ex.id}
-                          className={
-                            idx === 0
-                              ? 'inline-flex items-center rounded-md bg-accent/20 px-2 py-0.5 text-xs font-medium text-accent'
-                              : 'inline-flex items-center rounded-md border border-line bg-surface-2/50 px-2 py-0.5 text-xs font-medium text-fg-muted'
-                          }
-                        >
-                          {ex.name}
-                        </span>
-                      ))}
-                      <span className="text-xs text-fg-muted">
-                        {t('home.exercisesCount', {
-                          count: routine.exercises.length,
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onStart(routine);
-                    }}
-                    disabled={routine.exercises.length === 0}
-                    leadingIcon={<Play className="h-3.5 w-3.5" />}
-                    className="sm:w-auto"
-                  >
-                    {t('workouts.startRoutine')}
-                  </Button>
-                </Card>
-              </li>
-            );
-          })}
-
-          <li>
-            <button
-              type="button"
-              onClick={() => navigate('/treino/novo')}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-line/80 px-4 py-4 text-sm font-medium text-accent transition-colors hover:border-accent/60 hover:bg-accent/5"
-            >
-              <Plus className="h-4 w-4" />
-              {t('workouts.createNewRoutine')}
-            </button>
-          </li>
+          {routines.map((routine) => (
+            <li key={routine.id}>
+              <RoutineCard
+                routine={routine}
+                onOpen={() => navigate(`/treino/${routine.id}`)}
+                onStart={() => onStart(routine)}
+              />
+            </li>
+          ))}
         </ul>
       )}
+
+      {!isLoading && (
+        <button
+          type="button"
+          onClick={() => navigate('/treino/novo')}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-line px-4 py-4 text-sm font-medium text-fg-muted transition-colors hover:border-accent/60 hover:text-accent"
+        >
+          <Plus className="h-4 w-4" />
+          {t('workouts.createNewRoutine')}
+        </button>
+      )}
     </>
+  );
+}
+
+function RoutineCard({
+  routine,
+  onOpen,
+  onStart,
+}: {
+  routine: Routine;
+  onOpen: () => void;
+  onStart: () => void;
+}) {
+  const { t } = useTranslation();
+  const chips = routine.exercises.slice(0, 4);
+  const remaining = Math.max(0, routine.exercises.length - chips.length);
+
+  return (
+    <Card
+      interactive
+      onClick={onOpen}
+      className="flex flex-col gap-4 p-5"
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 className="truncate text-lg font-semibold text-fg">
+          {routine.name}
+        </h3>
+        <span className="shrink-0 text-xs text-fg-subtle">
+          {t('home.exercisesCount', { count: routine.exercises.length })}
+        </span>
+      </div>
+
+      {chips.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {chips.map((ex) => (
+            <span
+              key={ex.id}
+              className="inline-flex items-center rounded-md bg-surface-2 px-2 py-1 text-[11px] font-medium uppercase tracking-wide text-fg-muted"
+            >
+              {ex.name}
+            </span>
+          ))}
+          {remaining > 0 && (
+            <span className="text-xs text-fg-subtle">+{remaining}</span>
+          )}
+        </div>
+      )}
+
+      <Button
+        size="md"
+        fullWidth
+        onClick={(e) => {
+          e.stopPropagation();
+          onStart();
+        }}
+        disabled={routine.exercises.length === 0}
+        leadingIcon={<Play className="h-4 w-4" />}
+      >
+        {t('workouts.startRoutine')}
+      </Button>
+    </Card>
   );
 }
 

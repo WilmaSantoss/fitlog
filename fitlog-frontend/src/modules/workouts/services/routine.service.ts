@@ -23,6 +23,7 @@ export type RoutineExerciseInput = {
   readonly name: string;
   readonly notes: string | null;
   readonly restSeconds: number | null;
+  readonly videoUrl: string | null;
   readonly sets: readonly PlannedSetInput[];
 };
 
@@ -56,6 +57,7 @@ function materializeExercise(e: RoutineExerciseInput): RoutineExercise {
     name: e.name,
     notes: e.notes,
     restSeconds: e.restSeconds,
+    videoUrl: e.videoUrl,
     sets: e.sets.map(materializeSet),
   };
 }
@@ -113,6 +115,7 @@ class RoutineService implements IRoutineService {
         name: e.name,
         notes: e.notes,
         restSeconds: e.restSeconds,
+        videoUrl: e.videoUrl,
         sets: e.sets.map((s) => ({
           type: s.type,
           reps: s.reps,

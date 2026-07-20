@@ -29,9 +29,11 @@ export function PageTitle({
             {eyebrow}
           </p>
         )}
-        <h1 className="text-2xl font-semibold text-fg md:text-3xl">{title}</h1>
+        <h1 className="text-[26px] font-semibold leading-tight tracking-tight text-fg md:text-3xl">
+          {title}
+        </h1>
         {subtitle && (
-          <p className="mt-1.5 text-sm text-fg-muted">{subtitle}</p>
+          <p className="mt-1.5 text-[13px] text-fg-muted">{subtitle}</p>
         )}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}

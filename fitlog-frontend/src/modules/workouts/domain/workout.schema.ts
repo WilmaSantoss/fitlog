@@ -19,6 +19,7 @@ export const routineExerciseSchema = z.object({
   name: z.string().trim().min(1, 'Obrigatório.'),
   notes: optionalString,
   restSeconds: optionalRestString,
+  videoUrl: z.string().nullable().default(null),
   sets: z.array(plannedSetSchema).min(1, 'Adicione pelo menos uma série.'),
 });
 

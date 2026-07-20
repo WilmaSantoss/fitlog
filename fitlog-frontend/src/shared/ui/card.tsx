@@ -13,7 +13,7 @@ export const Card = forwardRef<HTMLDivElement, Props>(function Card(
     <div
       ref={ref}
       className={cn(
-        'rounded-lg bg-surface border border-line/60 p-4 shadow-md shadow-black/20',
+        'rounded-2xl bg-surface border border-line/60 p-4 shadow-md shadow-black/20',
         interactive &&
           'transition-all hover:bg-surface-2 hover:border-line cursor-pointer hover:-translate-y-px',
         className,

@@ -1,5 +1,7 @@
 import {
+  Controller,
   useFieldArray,
+  useWatch,
   type Control,
   type UseFormRegister,
   type FieldErrors,
@@ -18,6 +20,7 @@ import type {
   RoutineFormValues,
 } from '../domain/workout.schema';
 import { newId } from '@/shared/lib/uuid';
+import { VideoUpload } from './video-upload';
 
 type Props = {
   index: number;
@@ -39,6 +42,11 @@ export function ExerciseBlock({
   const { fields, append, remove } = useFieldArray({
     control,
     name: `exercises.${index}.sets` as const,
+  });
+
+  const exerciseId = useWatch({
+    control,
+    name: `exercises.${index}.id` as const,
   });
 
   const exerciseErrors = errors.exercises?.[index];
@@ -99,6 +107,24 @@ export function ExerciseBlock({
             {...register(`exercises.${index}.notes` as const)}
           />
         </FormField>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium text-fg-muted">
+          Vídeo do exercício{' '}
+          <span className="text-fg-subtle">({t('common.optional')})</span>
+        </span>
+        <Controller
+          control={control}
+          name={`exercises.${index}.videoUrl` as const}
+          render={({ field }) => (
+            <VideoUpload
+              exerciseId={exerciseId}
+              videoUrl={field.value ?? null}
+              onChange={(url) => field.onChange(url)}
+            />
+          )}
+        />
       </div>
 
       <div>

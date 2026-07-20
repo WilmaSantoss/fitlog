@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Trash2 } from 'lucide-react';
+import { ChevronLeft, PlayCircle, Timer, Trash2 } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { Textarea } from '@/shared/ui/textarea';
@@ -144,12 +144,12 @@ export function SessionPage() {
         </div>
 
         {stats && (
-          <div className="mt-3 grid grid-cols-3 gap-3">
+          <div className="mt-4 grid grid-cols-3 gap-3">
             <div>
               <p className="text-[10px] uppercase tracking-wider text-fg-subtle">
                 {t('workouts.duration')}
               </p>
-              <p className="font-mono text-base font-semibold text-accent md:text-lg">
+              <p className="mt-1 font-mono text-xl font-semibold text-accent md:text-2xl">
                 {stats.durationSeconds !== null
                   ? formatDuration(stats.durationSeconds)
                   : '—'}
@@ -159,16 +159,22 @@ export function SessionPage() {
               <p className="text-[10px] uppercase tracking-wider text-fg-subtle">
                 {t('workouts.volume')}
               </p>
-              <p className="text-base font-semibold text-fg md:text-lg">
-                {formatNumber(stats.totalVolumeKg)} kg
+              <p className="mt-1 text-xl font-semibold text-fg md:text-2xl">
+                {formatNumber(stats.totalVolumeKg)}
+                <span className="ml-1 text-xs font-normal text-fg-muted">
+                  kg
+                </span>
               </p>
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-wider text-fg-subtle">
-                {t('workouts.exercises')}
+                {t('workouts.sets')}
               </p>
-              <p className="text-base font-semibold text-fg md:text-lg">
-                {stats.completedExercises} / {stats.totalExercises}
+              <p className="mt-1 text-xl font-semibold text-fg md:text-2xl">
+                {stats.completedSets}
+                <span className="text-sm font-normal text-fg-muted">
+                  /{stats.totalSets}
+                </span>
               </p>
             </div>
           </div>
@@ -191,37 +197,66 @@ export function SessionPage() {
 
           return (
             <li key={exercise.id}>
-              <Card>
-                <div className="flex items-start justify-between gap-3">
-                  <h2 className="text-base font-semibold text-accent">
+              <Card className="p-0 overflow-hidden">
+                {exercise.videoUrl ? (
+                  <video
+                    key={exercise.videoUrl}
+                    src={exercise.videoUrl}
+                    className="block aspect-[16/6] w-full border-b border-line/40 object-cover"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    preload="metadata"
+                  />
+                ) : (
+                  <div
+                    className="relative flex aspect-[16/6] items-center justify-center border-b border-line/40 text-fg-subtle"
+                    style={{
+                      backgroundImage:
+                        'repeating-linear-gradient(-45deg, transparent 0 10px, rgba(255,255,255,0.02) 10px 20px)',
+                      backgroundColor: 'var(--color-surface-2)',
+                    }}
+                    aria-hidden
+                  >
+                    <div className="flex items-center gap-2 text-xs">
+                      <PlayCircle className="h-4 w-4" />
+                      <span className="lowercase">sem vídeo</span>
+                    </div>
+                  </div>
+                )}
+                <div className="p-5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <h2 className="text-lg font-semibold text-accent">
                     {exercise.name}
                   </h2>
-                  <div className="text-right">
-                    {durationSec !== null && (
-                      <p className="font-mono text-sm font-semibold text-fg">
-                        {formatClock(durationSec)}
-                      </p>
+                  <div className="flex items-center gap-3 text-right">
+                    {exercise.restSeconds !== null && (
+                      <span className="inline-flex items-center gap-1 text-xs text-fg-muted">
+                        <Timer className="h-3.5 w-3.5" />
+                        {formatDuration(exercise.restSeconds)}
+                      </span>
                     )}
-                    {averageSec !== null && (
-                      <p className="font-mono text-[11px] text-fg-muted">
-                        {t('workouts.exerciseAvg', {
-                          time: formatClock(averageSec),
-                        })}
-                      </p>
+                    {durationSec !== null && (
+                      <span className="font-mono text-sm font-semibold text-fg">
+                        {formatClock(durationSec)}
+                      </span>
                     )}
                   </div>
                 </div>
+                {averageSec !== null && (
+                  <p className="mt-1 font-mono text-[11px] text-fg-muted">
+                    {t('workouts.exerciseAvg', {
+                      time: formatClock(averageSec),
+                    })}
+                  </p>
+                )}
                 {exercise.notes && (
-                  <p className="mt-1 whitespace-pre-wrap text-sm text-fg-muted">
+                  <p className="mt-2 whitespace-pre-wrap text-sm text-fg-muted">
                     {exercise.notes}
                   </p>
                 )}
-                {exercise.restSeconds !== null && (
-                  <p className="mt-1 text-xs text-accent">
-                    {t('workouts.rest')}: {formatDuration(exercise.restSeconds)}
-                  </p>
-                )}
-                <div className="mt-3 grid grid-cols-[2.25rem_minmax(0,5rem)_1fr_1fr_2.25rem] gap-2 px-2 text-xs uppercase tracking-wide text-fg-subtle">
+                <div className="mt-4 grid grid-cols-[2.25rem_minmax(0,5rem)_1fr_1fr_2.25rem] gap-2 px-2 text-xs uppercase tracking-wide text-fg-subtle">
                   <span>{t('workouts.set')}</span>
                   <span>{t('workouts.previous')}</span>
                   <span>{t('workouts.weight')}</span>
@@ -254,6 +289,7 @@ export function SessionPage() {
                       />
                     );
                   })}
+                </div>
                 </div>
               </Card>
             </li>

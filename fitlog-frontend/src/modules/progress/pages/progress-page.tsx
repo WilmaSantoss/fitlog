@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   LineChart as LineChartIcon,
-  Plus,
 } from 'lucide-react';
 import {
   CartesianGrid,
@@ -87,7 +86,6 @@ function startOfMonthIso(): string {
 
 export function ProgressPage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('body');
 
   return (
@@ -95,20 +93,9 @@ export function ProgressPage() {
       <PageTitle
         title={t('progress.title')}
         subtitle={t('progress.subtitle')}
-        actions={
-          <Button
-            leadingIcon={<Plus className="h-4 w-4" />}
-            onClick={() => navigate('/medidas/nova')}
-          >
-            {t('measurements.new')}
-          </Button>
-        }
       />
 
-      <div
-        role="tablist"
-        className="inline-flex w-full max-w-xs rounded-lg border border-line/60 bg-surface p-1 text-sm"
-      >
+      <div role="tablist" className="flex flex-wrap items-center gap-2">
         <TabButton
           active={tab === 'body'}
           onClick={() => setTab('body')}
@@ -122,7 +109,7 @@ export function ProgressPage() {
         <TabButton
           active={tab === 'frequency'}
           onClick={() => setTab('frequency')}
-          label={t('progress.tabFrequency')}
+          label="Freq."
         />
       </div>
 
@@ -149,10 +136,10 @@ function TabButton({
       aria-selected={active}
       onClick={onClick}
       className={cn(
-        'flex-1 rounded-md px-3 py-1.5 font-medium transition-colors',
+        'rounded-full border px-3.5 py-1.5 text-[11px] font-medium uppercase tracking-wider transition-colors',
         active
-          ? 'bg-accent text-on-accent'
-          : 'text-fg-muted hover:text-fg',
+          ? 'border-accent bg-accent text-on-accent'
+          : 'border-line/50 text-fg-muted hover:border-line hover:text-fg',
       )}
     >
       {label}
@@ -186,74 +173,133 @@ function BodyTab() {
   const hasAnyMeasurement = measurements.length > 0;
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <Card className="flex flex-col gap-3 p-5 lg:col-span-2">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-base font-semibold text-fg">
-            {t('progress.weightChart')}
-          </h2>
-          {weightSeries.length > 0 && (
-            <p className="text-xs text-fg-muted">
-              {t('progress.entriesCount', { count: weightSeries.length })}
-            </p>
+    <div className="flex flex-col gap-6">
+      <section className="flex flex-col gap-3">
+        <h2 className="text-[11px] font-medium uppercase tracking-wider text-fg-subtle">
+          {t('progress.weightChart')}
+        </h2>
+        <Card className="flex flex-col gap-3 p-5">
+          {weightSeries.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-4 py-10 text-center">
+              <LineChartIcon className="h-5 w-5 text-fg-subtle" />
+              <div className="flex flex-col gap-1.5">
+                <p className="text-[15px] font-semibold text-fg">
+                  {t('progress.weightEmptyTitle')}
+                </p>
+                <p className="max-w-[220px] text-[13px] leading-snug text-fg-muted">
+                  {t('progress.weightEmptyDesc')}
+                </p>
+              </div>
+              <Button
+                size="sm"
+                className="rounded-full px-4"
+                onClick={() => navigate('/medidas/nova')}
+              >
+                {t('progress.registerWeight')}
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-baseline justify-between">
+                <p className="text-xs text-fg-muted">
+                  {t('progress.entriesCount', { count: weightSeries.length })}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/medidas/nova')}
+                  className="text-xs font-medium text-accent hover:text-accent-hover"
+                >
+                  {t('measurements.record')} →
+                </button>
+              </div>
+              <ChartContainer data={weightSeries} unit="kg" />
+            </>
           )}
-        </div>
+        </Card>
+      </section>
 
-        {weightSeries.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 py-10 text-center">
-            <LineChartIcon className="h-8 w-8 text-fg-subtle" />
-            <p className="text-base font-medium text-fg">
-              {t('progress.weightEmptyTitle')}
-            </p>
-            <p className="max-w-xs text-sm text-fg-muted">
-              {t('progress.weightEmptyDesc')}
-            </p>
-            <Button onClick={() => navigate('/medidas/nova')}>
-              {t('progress.registerWeight')}
-            </Button>
-          </div>
-        ) : (
-          <ChartContainer data={weightSeries} unit="kg" />
-        )}
-      </Card>
-
-      <Card className="flex flex-col p-5">
-        <h2 className="text-base font-semibold text-fg">
+      <section className="flex flex-col gap-3">
+        <h2 className="text-[11px] font-medium uppercase tracking-wider text-fg-subtle">
           {t('progress.measurements')}
         </h2>
-        <ul className="mt-4 flex flex-col divide-y divide-line/40">
-          {TRACKED_MEASURES.map((metric) => {
-            const latest = firstValueOf(measurements, metric);
-            return (
-              <li
-                key={metric}
-                className="flex items-baseline justify-between gap-3 py-3"
-              >
-                <span className="text-sm text-fg">
-                  {t(`measurements.metrics.${metric}`)}
-                </span>
-                <span
-                  className={
-                    latest
-                      ? 'text-sm font-medium text-fg'
-                      : 'text-sm text-fg-subtle'
-                  }
-                >
-                  {latest ? formatCm(latest.value) : '— cm'}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-        <p className="mt-auto pt-4 text-xs text-fg-subtle">
-          {hasAnyMeasurement
-            ? t('progress.lastUpdate', {
-                when: formatRelative(measurements[0]!.recordedAt),
-              })
-            : t('progress.noMeasurements')}
-        </p>
-      </Card>
+        {hasAnyMeasurement ? (
+          <MeasurementsSummary
+            measurements={measurements}
+            onAdd={() => navigate('/medidas/nova')}
+            onOpen={() => navigate('/medidas')}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => navigate('/medidas/nova')}
+            className="flex w-full items-center justify-between gap-3 border-b border-line/40 px-1 py-3 text-left transition-colors hover:text-fg"
+          >
+            <span className="text-sm text-fg-muted">
+              Cintura, braço, coxa…
+            </span>
+            <span className="text-sm font-medium text-accent">
+              {t('common.add')} →
+            </span>
+          </button>
+        )}
+      </section>
     </div>
+  );
+}
+
+function MeasurementsSummary({
+  measurements,
+  onAdd,
+  onOpen,
+}: {
+  measurements: readonly Measurement[];
+  onAdd: () => void;
+  onOpen: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Card className="flex flex-col divide-y divide-line/40 p-0">
+      {TRACKED_MEASURES.map((metric) => {
+        const latest = firstValueOf(measurements, metric);
+        return (
+          <div
+            key={metric}
+            className="flex items-baseline justify-between gap-3 px-5 py-3"
+          >
+            <span className="text-sm text-fg">
+              {t(`measurements.metrics.${metric}`)}
+            </span>
+            <span
+              className={
+                latest
+                  ? 'text-sm font-medium text-fg'
+                  : 'text-sm text-fg-subtle'
+              }
+            >
+              {latest ? formatCm(latest.value) : '— cm'}
+            </span>
+          </div>
+        );
+      })}
+      <div className="flex items-center justify-between gap-3 px-5 py-3">
+        <button
+          type="button"
+          onClick={onOpen}
+          className="text-xs font-medium text-fg-muted hover:text-fg"
+        >
+          {t('progress.lastUpdate', {
+            when: formatRelative(measurements[0]!.recordedAt),
+          })}
+        </button>
+        <button
+          type="button"
+          onClick={onAdd}
+          className="text-xs font-medium text-accent hover:text-accent-hover"
+        >
+          {t('common.add')} →
+        </button>
+      </div>
+    </Card>
   );
 }
 
@@ -642,9 +688,9 @@ function ChartContainer({
           <Line
             type="monotone"
             dataKey="value"
-            stroke="#7c3aed"
+            stroke="#8b5cf6"
             strokeWidth={2.5}
-            dot={{ r: 3, fill: '#7c3aed', stroke: '#7c3aed' }}
+            dot={{ r: 3, fill: '#8b5cf6', stroke: '#8b5cf6' }}
             activeDot={{ r: 5 }}
           />
         </LineChart>

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Dumbbell, Play, Plus, Ruler } from 'lucide-react';
+import { ChevronRight, LineChart, Play, Plus } from 'lucide-react';
 import { Card } from '@/shared/ui/card';
 import { Button } from '@/shared/ui/button';
 import { PageTitle } from '@/shared/ui/page-title';
@@ -10,62 +10,36 @@ import { useRoutinesQuery } from '@/modules/workouts/hooks/use-routines';
 import {
   useActiveSessionsQuery,
   useFinishedSessionsQuery,
-  useStartSessionFromRoutine,
 } from '@/modules/workouts/hooks/use-sessions';
 import { useProfileQuery } from '@/modules/profile/hooks/use-profile';
 import { formatRelative, isThisWeek } from '@/shared/lib/date';
 import { formatKg } from '@/shared/lib/format';
-import type { Routine } from '@/modules/workouts/domain/workout.types';
-import { cn } from '@/shared/lib/cn';
 
 const WEEK_GOAL = 4;
 
-type StatProps = {
+const WEEKDAY_SHORT = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'] as const;
+const MONTH_SHORT = [
+  'JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN',
+  'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ',
+] as const;
+
+function formatEyebrowDate(d: Date): string {
+  return `${WEEKDAY_SHORT[d.getDay()]} · ${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`;
+}
+
+type StatRowProps = {
   label: string;
-  value: string;
-  secondary?: string;
-  secondaryTone?: 'muted' | 'accent';
-  onSecondaryClick?: () => void;
+  children: React.ReactNode;
 };
 
-function Stat({
-  label,
-  value,
-  secondary,
-  secondaryTone = 'muted',
-  onSecondaryClick,
-}: StatProps) {
+function StatRow({ label, children }: StatRowProps) {
   return (
-    <Card className="flex flex-col gap-2 p-5">
-      <p className="text-[11px] font-medium uppercase tracking-wider text-fg-subtle">
+    <div className="flex items-center justify-between gap-4 py-3.5 first:pt-0 last:pb-0 border-b border-line/40 last:border-b-0">
+      <span className="text-[11px] font-medium uppercase tracking-wider text-fg-subtle">
         {label}
-      </p>
-      <p className="text-2xl font-semibold text-fg">{value}</p>
-      {secondary &&
-        (onSecondaryClick ? (
-          <button
-            type="button"
-            onClick={onSecondaryClick}
-            className={cn(
-              'mt-auto self-start text-xs font-medium transition-colors',
-              secondaryTone === 'accent'
-                ? 'text-accent hover:text-accent-hover'
-                : 'text-fg-muted hover:text-fg',
-            )}
-          >
-            {secondary}
-          </button>
-        ) : (
-          <p
-            className={cn(
-              'mt-auto text-xs',
-              secondaryTone === 'accent' ? 'text-accent' : 'text-fg-muted',
-            )}
-          >
-            {secondary}
-          </p>
-        ))}
-    </Card>
+      </span>
+      <div className="text-right">{children}</div>
+    </div>
   );
 }
 
@@ -77,7 +51,6 @@ export function HomePage() {
   const finishedQ = useFinishedSessionsQuery();
   const activeQ = useActiveSessionsQuery();
   const profileQ = useProfileQuery();
-  const startMutation = useStartSessionFromRoutine();
 
   const lastWeight = useMemo(
     () => measurementsQ.data?.find((m) => m.weightKg !== null) ?? null,
@@ -95,17 +68,21 @@ export function HomePage() {
 
   const userName = profileQ.data?.name?.trim();
   const routines = routinesQ.data ?? [];
-
-  async function handleStart(routine: Routine) {
-    const session = await startMutation.mutateAsync(routine.id);
-    if (session) navigate(`/treino/sessao/${session.id}`);
-  }
+  const canStart = routines.length > 0;
 
   return (
     <div className="flex flex-col gap-6 pt-6 md:pt-2">
       <PageTitle
+        eyebrow={
+          <span className="inline-flex items-center gap-2">
+            <span className="h-px w-6 bg-accent" />
+            {formatEyebrowDate(new Date())}
+          </span>
+        }
         title={
-          userName ? `${t('home.greetingAnon')}, ${userName}` : t('home.greetingAnon')
+          userName
+            ? `${t('home.greetingAnon')}, ${userName}`
+            : t('home.greetingAnon')
         }
         subtitle={t('app.tagline')}
       />
@@ -131,126 +108,109 @@ export function HomePage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat
-          label={t('home.statCurrentWeight')}
-          value={lastWeight ? formatKg(lastWeight.weightKg) : '—'}
-          secondary={
-            lastWeight
-              ? formatRelative(lastWeight.recordedAt)
-              : t('home.registerWeight')
-          }
-          secondaryTone={lastWeight ? 'muted' : 'accent'}
-          onSecondaryClick={
-            lastWeight ? undefined : () => navigate('/medidas/nova')
-          }
-        />
-        <Stat
-          label={t('home.statThisWeek')}
-          value={t('home.workoutsCount', { count: weekCount })}
-          secondary={t('home.weekGoal', { goal: WEEK_GOAL })}
-        />
-        <Stat
-          label={t('home.statLastWorkout')}
-          value={
-            lastSession
-              ? lastSession.routineName
-              : t('home.statNoWorkoutsShort')
-          }
-          secondary={
-            lastSession
-              ? formatRelative(lastSession.finishedAt ?? lastSession.startedAt)
-              : t('home.startToday')
-          }
-        />
-        <Stat
-          label={t('home.statTotalRoutines')}
-          value={String(routines.length)}
-          secondary={t('home.routinesActive', { count: routines.length })}
-        />
-      </div>
+      <Card className="px-5 py-2">
+        <StatRow label={t('home.statThisWeek')}>
+          <span className="text-2xl font-semibold text-fg tabular-nums">
+            {weekCount}
+            <span className="ml-0.5 text-sm font-normal text-fg-muted">
+              /{WEEK_GOAL}
+            </span>
+          </span>
+        </StatRow>
+
+        <StatRow label={t('home.statCurrentWeight')}>
+          {lastWeight ? (
+            <div className="flex flex-col items-end">
+              <span className="text-base font-semibold text-fg">
+                {formatKg(lastWeight.weightKg)}
+              </span>
+              <span className="text-[11px] text-fg-muted">
+                {formatRelative(lastWeight.recordedAt)}
+              </span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => navigate('/medidas/nova')}
+              className="text-sm font-medium text-accent hover:text-accent-hover"
+            >
+              {t('home.registerWeight')} →
+            </button>
+          )}
+        </StatRow>
+
+        <StatRow label={t('home.statLastWorkout')}>
+          {lastSession ? (
+            <div className="flex items-baseline justify-end gap-2">
+              <span className="text-base font-semibold text-fg">
+                {lastSession.routineName}
+              </span>
+              <span className="text-xs text-fg-muted">
+                ·{' '}
+                {formatRelative(
+                  lastSession.finishedAt ?? lastSession.startedAt,
+                )}
+              </span>
+            </div>
+          ) : (
+            <span className="text-sm text-fg-muted">
+              {t('home.startToday')}
+            </span>
+          )}
+        </StatRow>
+      </Card>
+
+      <Button
+        size="md"
+        fullWidth
+        leadingIcon={<Play className="h-4 w-4" />}
+        disabled={!canStart}
+        onClick={() => navigate('/treino')}
+      >
+        {t('home.quickStartWorkout')}
+      </Button>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-[11px] font-medium uppercase tracking-wider text-fg-subtle">
           {t('home.sectionShortcuts')}
         </h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Button
-            variant="secondary"
-            leadingIcon={<Ruler className="h-4 w-4" />}
+        <Card className="divide-y divide-line/40 p-0">
+          <ShortcutRow
+            icon={<LineChart className="h-4 w-4" />}
+            label={t('home.quickAddMeasurement')}
             onClick={() => navigate('/medidas/nova')}
-          >
-            {t('home.quickAddMeasurement')}
-          </Button>
-          <Button
-            variant="secondary"
-            leadingIcon={<Dumbbell className="h-4 w-4" />}
-            onClick={() => navigate('/treino')}
-          >
-            {t('home.quickStartWorkout')}
-          </Button>
-          <Button
-            variant="secondary"
-            leadingIcon={<Plus className="h-4 w-4" />}
+          />
+          <ShortcutRow
+            icon={<Plus className="h-4 w-4" />}
+            label={t('home.quickCreateRoutine')}
             onClick={() => navigate('/treino/novo')}
-          >
-            {t('home.quickCreateRoutine')}
-          </Button>
-        </div>
+          />
+        </Card>
       </section>
-
-      {routines.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-[11px] font-medium uppercase tracking-wider text-fg-subtle">
-            {t('home.sectionRecentRoutines')}
-          </h2>
-          <ul className="flex flex-col gap-3">
-            {routines.slice(0, 3).map((routine) => {
-              const exerciseNames = routine.exercises
-                .slice(0, 2)
-                .map((e) => e.name)
-                .join(', ');
-              return (
-                <li key={routine.id}>
-                  <Card
-                    interactive
-                    onClick={() => navigate(`/treino/${routine.id}`)}
-                    className="flex items-center justify-between gap-3 p-4"
-                  >
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
-                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent/15 text-accent">
-                        <Dumbbell className="h-5 w-5" />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-base font-semibold text-fg">
-                          {routine.name}
-                        </p>
-                        <p className="truncate text-xs text-fg-muted">
-                          {t('home.exercisesCount', {
-                            count: routine.exercises.length,
-                          })}
-                          {exerciseNames && ` · ${exerciseNames}`}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleStart(routine);
-                      }}
-                      disabled={routine.exercises.length === 0}
-                      leadingIcon={<Play className="h-3.5 w-3.5" />}
-                    >
-                      {t('home.startShort')}
-                    </Button>
-                  </Card>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
     </div>
+  );
+}
+
+function ShortcutRow({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-surface-2/60"
+    >
+      <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-accent/15 text-accent">
+        {icon}
+      </span>
+      <span className="flex-1 text-sm font-medium text-fg">{label}</span>
+      <ChevronRight className="h-4 w-4 text-fg-subtle" />
+    </button>
   );
 }

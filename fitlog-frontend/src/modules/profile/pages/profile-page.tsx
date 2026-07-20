@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, LogOut, Settings } from 'lucide-react';
-import { Card } from '@/shared/ui/card';
+import { ChevronRight, LogOut, SunMedium } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { FormField } from '@/shared/ui/form-field';
 import { Input } from '@/shared/ui/input';
@@ -72,30 +71,31 @@ export function ProfilePage() {
       <PageTitle title={t('profile.title')} subtitle={t('profile.subtitle')} />
 
       {email && (
-        <Card className="flex items-center justify-between gap-4 p-5">
+        <div className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent text-base font-semibold text-on-accent">
+            <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent text-lg font-semibold text-on-accent shadow-lg shadow-accent/30">
               {initial}
             </span>
             <div className="min-w-0">
-              <p className="truncate text-base font-semibold text-fg">
+              <p className="truncate text-[15px] font-semibold text-fg">
                 {displayName}
               </p>
-              <p className="truncate text-sm text-fg-muted">{email}</p>
+              <p className="truncate text-xs text-fg-muted">{email}</p>
             </div>
           </div>
           <Button
             variant="secondary"
             size="sm"
-            leadingIcon={<LogOut className="h-4 w-4" />}
+            leadingIcon={<LogOut className="h-3.5 w-3.5" />}
             onClick={() => setConfirmLogoutOpen(true)}
+            className="rounded-full"
           >
             {t('auth.logout')}
           </Button>
-        </Card>
+        </div>
       )}
 
-      <Card className="flex flex-col gap-4 p-5">
+      <section className="flex flex-col gap-4">
         <h2 className="text-[11px] font-medium uppercase tracking-wider text-fg-subtle">
           {t('profile.settings')}
         </h2>
@@ -112,35 +112,38 @@ export function ProfilePage() {
             id="height"
             type="number"
             inputMode="numeric"
+            step="1"
             placeholder="170"
             value={heightCm}
             onChange={(e) => setHeightCm(e.target.value)}
           />
         </FormField>
         <div className="flex items-center justify-end gap-2 pt-1">
-          <Button variant="secondary" onClick={handleCancel}>
+          <Button variant="secondary" size="sm" onClick={handleCancel}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={handleSave} disabled={updateMutation.isPending}>
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={updateMutation.isPending}
+          >
             {t('common.save')}
           </Button>
         </div>
-      </Card>
+      </section>
 
       <button
         type="button"
         onClick={() => navigate('/ajustes')}
-        className="flex items-center justify-between gap-3 rounded-xl border border-line/60 bg-surface p-5 text-left transition-colors hover:bg-surface-2/60 md:hidden"
+        className="-mx-2 flex items-center justify-between gap-3 border-t border-line/40 px-2 py-4 text-left transition-colors hover:text-fg"
       >
         <div className="flex items-center gap-3">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-accent/15 text-accent">
-            <Settings className="h-4 w-4" />
-          </span>
+          <SunMedium className="h-4 w-4 text-accent" />
           <span className="text-sm font-medium text-fg">
             {t('nav.settings')}
           </span>
         </div>
-        <ChevronRight className="h-4 w-4 text-fg-muted" />
+        <ChevronRight className="h-4 w-4 text-fg-subtle" />
       </button>
 
       {statusMsg && (
@@ -149,14 +152,14 @@ export function ProfilePage() {
         </p>
       )}
 
-      <div className="flex items-start gap-3 px-1 text-xs">
-        <p className="font-medium uppercase tracking-wider text-fg-subtle">
+      <p className="px-1 text-xs">
+        <span className="font-medium uppercase tracking-wider text-fg-subtle">
           {t('profile.about')}
-        </p>
-        <p className="text-fg-muted">
+        </span>{' '}
+        <span className="text-fg-muted">
           {t('profile.aboutBody', { version: APP_VERSION })}
-        </p>
-      </div>
+        </span>
+      </p>
 
       <ConfirmDialog
         open={confirmLogoutOpen}

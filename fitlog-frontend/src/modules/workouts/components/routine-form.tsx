@@ -39,6 +39,7 @@ function buildDefaults(initial?: Routine): RoutineFormValues {
           name: '',
           notes: '',
           restSeconds: '',
+          videoUrl: null,
           sets: [
             {
               id: newId(),
@@ -59,6 +60,7 @@ function buildDefaults(initial?: Routine): RoutineFormValues {
       name: ex.name,
       notes: ex.notes ?? '',
       restSeconds: formatRestInput(ex.restSeconds),
+      videoUrl: ex.videoUrl ?? null,
       sets: ex.sets.map((s) => ({
         id: s.id,
         type: s.type,
@@ -95,6 +97,7 @@ export function RoutineForm({ initial, onSubmit, submitting }: Props) {
         name: ex.name,
         notes: ex.notes,
         restSeconds: ex.restSeconds,
+        videoUrl: ex.videoUrl,
         sets: ex.sets.map((s) => ({
           id: s.id,
           type: s.type,
@@ -159,6 +162,7 @@ export function RoutineForm({ initial, onSubmit, submitting }: Props) {
             name: '',
             notes: '',
             restSeconds: '',
+            videoUrl: null,
             sets: [
               {
                 id: newId(),
