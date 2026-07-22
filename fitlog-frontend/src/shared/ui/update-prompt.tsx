@@ -1,6 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
-import { RefreshCw } from 'lucide-react';
+import { CheckCircle2, RefreshCw } from 'lucide-react';
+
+const JUST_UPDATED_KEY = 'fitlog:just-updated';
 
 export function UpdatePrompt() {
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
@@ -43,6 +45,46 @@ export function UpdatePrompt() {
     };
   }, []);
 
+  // Após o reload disparado pelo updateServiceWorker, mostra confirmação.
+  const [justUpdated, setJustUpdated] = useState(false);
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(JUST_UPDATED_KEY) === '1') {
+        sessionStorage.removeItem(JUST_UPDATED_KEY);
+        setJustUpdated(true);
+        const id = window.setTimeout(() => setJustUpdated(false), 3500);
+        return () => window.clearTimeout(id);
+      }
+    } catch {
+      // sessionStorage indisponível — ignora
+    }
+  }, []);
+
+  const handleUpdate = () => {
+    try {
+      sessionStorage.setItem(JUST_UPDATED_KEY, '1');
+    } catch {
+      // ignora
+    }
+    void updateServiceWorker(true);
+  };
+
+  if (justUpdated) {
+    return (
+      <div
+        role="status"
+        className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-[70] flex justify-center px-3 md:bottom-4"
+      >
+        <div className="pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-xl border border-success/40 bg-surface px-4 py-3 shadow-2xl shadow-black/40">
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />
+          <p className="min-w-0 flex-1 text-sm text-fg">
+            App atualizado com sucesso.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!needRefresh) return null;
 
   return (
@@ -59,7 +101,7 @@ export function UpdatePrompt() {
         </p>
         <button
           type="button"
-          onClick={() => void updateServiceWorker(true)}
+          onClick={handleUpdate}
           className="shrink-0 rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-on-accent hover:bg-accent/90"
         >
           Atualizar

@@ -85,6 +85,14 @@ Deno.serve(async (req) => {
             keys: { p256dh: sub.p256dh, auth: sub.auth_key },
           },
           JSON.stringify(notif.payload),
+          {
+            // urgency 'high' força o APNs (iOS) a entregar imediatamente em vez
+            // de agrupar/adiar por economia de bateria. TTL curto: se não
+            // conseguir entregar em 60s a notificação já está estourada e não
+            // faz sentido chegar depois.
+            urgency: 'high',
+            TTL: 60,
+          },
         );
         anySucceeded = true;
         await admin
