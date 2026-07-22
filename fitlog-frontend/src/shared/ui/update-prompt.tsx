@@ -49,20 +49,20 @@ export function UpdatePrompt() {
   const [justUpdated, setJustUpdated] = useState(false);
   useEffect(() => {
     try {
-      if (sessionStorage.getItem(JUST_UPDATED_KEY) === '1') {
-        sessionStorage.removeItem(JUST_UPDATED_KEY);
+      if (localStorage.getItem(JUST_UPDATED_KEY) === '1') {
+        localStorage.removeItem(JUST_UPDATED_KEY);
         setJustUpdated(true);
         const id = window.setTimeout(() => setJustUpdated(false), 3500);
         return () => window.clearTimeout(id);
       }
     } catch {
-      // sessionStorage indisponível — ignora
+      // localStorage indisponível — ignora
     }
   }, []);
 
   const handleUpdate = () => {
     try {
-      sessionStorage.setItem(JUST_UPDATED_KEY, '1');
+      localStorage.setItem(JUST_UPDATED_KEY, '1');
     } catch {
       // ignora
     }
