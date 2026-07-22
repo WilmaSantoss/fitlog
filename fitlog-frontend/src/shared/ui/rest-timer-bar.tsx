@@ -15,14 +15,25 @@ export function RestTimerBar() {
   const skip = useRestTimerStore((s) => s.skip);
   const playedZeroRef = useRef(false);
 
-  // Tick a cada segundo enquanto o timer está rodando
+  // Tick a cada segundo enquanto o timer está rodando.
+  // Também reagenda no visibilitychange/focus pra recompor quando o iOS
+  // volta do lock — setInterval é pausado com a tela bloqueada.
   useEffect(() => {
     if (secondsLeft === null) {
       playedZeroRef.current = false;
       return;
     }
     const id = window.setInterval(tick, 1000);
-    return () => window.clearInterval(id);
+    const onWake = () => tick();
+    document.addEventListener('visibilitychange', onWake);
+    window.addEventListener('focus', onWake);
+    window.addEventListener('pageshow', onWake);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onWake);
+      window.removeEventListener('focus', onWake);
+      window.removeEventListener('pageshow', onWake);
+    };
   }, [secondsLeft, tick]);
 
   // Som + vibração quando zerar

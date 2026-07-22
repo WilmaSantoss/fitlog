@@ -108,4 +108,11 @@
   select {
     color-scheme: dark;
   }
+
+  .scroll-hide {
+    scrollbar-width: none;
+  }
+  .scroll-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
