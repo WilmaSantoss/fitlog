@@ -27,15 +27,10 @@ self.addEventListener('push', (event: PushEvent) => {
       payload = { title: 'Fitlog', body: event.data?.text() ?? '' };
     }
 
-    // Se o app estiver aberto e focado, o chime in-app resolve — não mostra
-    // notificação de sistema pra evitar ding duplicado
-    const clientsList = await self.clients.matchAll({
-      type: 'window',
-      includeUncontrolled: true,
-    });
-    const anyFocused = clientsList.some((c) => c.focused);
-    if (anyFocused) return;
-
+    // IMPORTANTE: iOS PWA impõe "push budget" — todo push RECEBIDO precisa
+    // resultar em showNotification, senão o iOS gasta budget e começa a
+    // atrasar pushes futuros por minutos. Sempre mostramos a notificação,
+    // mesmo com app focado (o chime local já tocou; a banner só reforça).
     await self.registration.showNotification(payload.title ?? 'Fitlog', {
       body: payload.body ?? '',
       tag: payload.restSessionId ?? 'fitlog-rest',
