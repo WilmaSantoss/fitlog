@@ -10,7 +10,7 @@ import { PageTitle } from '@/shared/ui/page-title';
 import { useProfileQuery, useUpdateProfile } from '../hooks/use-profile';
 import { useCurrentAccount, useLogout } from '@/modules/auth/hooks/use-auth';
 
-const APP_VERSION = '1.3.5';
+const APP_VERSION = '1.3.6';
 
 export function ProfilePage() {
   const { t } = useTranslation();

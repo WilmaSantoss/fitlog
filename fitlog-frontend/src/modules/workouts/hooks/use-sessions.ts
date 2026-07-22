@@ -117,9 +117,12 @@ function serializePerSession<T>(
   return next;
 }
 
+const UPDATE_SET_MUTATION_KEY = ['updateSessionSet'] as const;
+
 export function useUpdateSessionSet() {
   const qc = useQueryClient();
   return useMutation({
+    mutationKey: UPDATE_SET_MUTATION_KEY,
     mutationFn: (vars: UpdateSetVars) =>
       serializePerSession(vars.sessionId, () =>
         sessionService.updateSet(
@@ -167,7 +170,14 @@ export function useUpdateSessionSet() {
       if (ctx?.previous) qc.setQueryData(KEYS.detail(vars.sessionId), ctx.previous);
     },
     onSettled: (_d, _err, vars) => {
-      void qc.invalidateQueries({ queryKey: KEYS.detail(vars.sessionId) });
+      // Só invalida quando esta é a última mutation da fila. Se ainda há outras
+      // pendentes, o refetch traria estado servidor antes das próximas serem
+      // aplicadas — sobrescreveria os optimistic updates e faria os checks
+      // marcados piscarem.
+      const pending = qc.isMutating({ mutationKey: UPDATE_SET_MUTATION_KEY });
+      if (pending <= 1) {
+        void qc.invalidateQueries({ queryKey: KEYS.detail(vars.sessionId) });
+      }
     },
   });
 }

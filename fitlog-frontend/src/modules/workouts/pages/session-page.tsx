@@ -117,8 +117,8 @@ export function SessionPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 pt-2 md:pt-2">
-      <div className="sticky top-0 z-20 -mx-5 -mt-[calc(env(safe-area-inset-top)+0.5rem)] border-b border-line/60 bg-app px-5 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] md:-mx-10 md:-mt-2 md:px-10 md:pt-3">
+    <div className="flex flex-col gap-4">
+      <div className="sticky top-0 z-20 -mx-5 border-b border-line/60 bg-app px-5 pb-3 pt-3 md:-mx-10 md:-mt-8 md:px-10 md:pt-8">
         <div className="flex items-center gap-3">
           <IconButton
             label={t('common.back')}

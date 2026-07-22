@@ -84,11 +84,11 @@ export function SessionSetRow({
     <div
       className={cn(
         'grid grid-cols-[2.25rem_minmax(0,5rem)_1fr_1fr_2.25rem] items-center gap-2 rounded-lg px-2 py-2 transition-colors',
-        set.completed && 'bg-success/10',
+        set.completed && 'ring-1 ring-inset ring-success/50',
       )}
     >
       <SetTypePill type={set.type} workingNumber={workingNumber} />
-      <span className="truncate text-xs text-fg-subtle">{previousLabel}</span>
+      <span className="truncate text-sm text-fg-muted">{previousLabel}</span>
       <input
         type="text"
         inputMode="decimal"
@@ -98,7 +98,7 @@ export function SessionSetRow({
         placeholder={
           set.plannedWeightKg !== null ? String(set.plannedWeightKg) : '—'
         }
-        className="h-9 w-full rounded-md bg-surface-2 px-2 text-center text-sm text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
+        className="h-8 w-full rounded-md bg-surface-2 px-2 text-center text-sm text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
       />
       <input
         type="text"
@@ -107,7 +107,7 @@ export function SessionSetRow({
         onChange={(e) => setReps(e.target.value)}
         onBlur={commit}
         placeholder={set.plannedReps ?? '—'}
-        className="h-9 w-full rounded-md bg-surface-2 px-2 text-center text-sm text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
+        className="h-8 w-full rounded-md bg-surface-2 px-2 text-center text-sm text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
       />
       <button
         type="button"
@@ -169,13 +169,13 @@ export function SessionSetRow({
           }
         }}
         className={cn(
-          'inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-all active:scale-95',
+          'inline-flex h-8 w-8 items-center justify-center rounded-md border transition-all active:scale-95',
           set.completed
-            ? 'border-success bg-success text-on-accent shadow-md shadow-success/40'
-            : 'border-line bg-surface-2 text-fg-muted hover:border-accent/60 hover:bg-accent/10 hover:text-accent',
+            ? 'border-success/70 bg-success/15 text-success'
+            : 'border-line bg-surface-2 text-fg-subtle hover:border-accent/60 hover:bg-accent/10 hover:text-accent',
         )}
       >
-        <Check className={cn('h-5 w-5', set.completed && 'stroke-[3]')} />
+        <Check className="h-4 w-4" />
       </button>
     </div>
   );

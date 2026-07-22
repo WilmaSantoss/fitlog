@@ -20,8 +20,9 @@ export function getPermissionState(): NotificationPermission | 'unsupported' {
 }
 
 function urlBase64ToUint8Array(base64: string): ArrayBuffer {
-  const padding = '='.repeat((4 - (base64.length % 4)) % 4);
-  const b64 = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const clean = base64.trim().replace(/\s+/g, '').replace(/=+$/, '');
+  const padding = '='.repeat((4 - (clean.length % 4)) % 4);
+  const b64 = (clean + padding).replace(/-/g, '+').replace(/_/g, '/');
   const raw = atob(b64);
   const buffer = new ArrayBuffer(raw.length);
   const view = new Uint8Array(buffer);
