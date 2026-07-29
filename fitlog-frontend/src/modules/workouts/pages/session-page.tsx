@@ -168,12 +168,12 @@ export function SessionPage() {
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-wider text-fg-subtle">
-                {t('workouts.sets')}
+                {t('workouts.exercises')}
               </p>
               <p className="mt-1 text-xl font-semibold text-fg md:text-2xl">
-                {stats.completedSets}
+                {stats.completedExercises}
                 <span className="text-sm font-normal text-fg-muted">
-                  /{stats.totalSets}
+                  /{stats.totalExercises}
                 </span>
               </p>
             </div>
@@ -231,12 +231,21 @@ export function SessionPage() {
                     {exercise.name}
                   </h2>
                   <div className="flex items-center gap-3 text-right">
-                    {exercise.restSeconds !== null && (
-                      <span className="inline-flex items-center gap-1 text-xs text-fg-muted">
-                        <Timer className="h-3.5 w-3.5" />
-                        {formatDuration(exercise.restSeconds)}
-                      </span>
-                    )}
+                    {(() => {
+                      const parts: string[] = [];
+                      if (exercise.rests.WU !== null)
+                        parts.push(`WU ${formatDuration(exercise.rests.WU)}`);
+                      if (exercise.rests.FS !== null)
+                        parts.push(`FS ${formatDuration(exercise.rests.FS)}`);
+                      if (exercise.rests.WS !== null)
+                        parts.push(`WS ${formatDuration(exercise.rests.WS)}`);
+                      return parts.length > 0 ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-fg-muted">
+                          <Timer className="h-3.5 w-3.5" />
+                          {parts.join(' · ')}
+                        </span>
+                      ) : null;
+                    })()}
                     {durationSec !== null && (
                       <span className="font-mono text-sm font-semibold text-fg">
                         {formatClock(durationSec)}
@@ -265,9 +274,9 @@ export function SessionPage() {
                 </div>
                 <div className="mt-1 flex flex-col gap-1">
                   {exercise.sets.map((set, idx) => {
-                    if (set.type === 'normal') workingIndex += 1;
+                    if (set.type === 'WS') workingIndex += 1;
                     const workingN =
-                      set.type === 'normal' ? workingIndex : undefined;
+                      set.type === 'WS' ? workingIndex : undefined;
                     const previous = previousSets[idx] ?? null;
                     return (
                       <SessionSetRow
@@ -276,7 +285,7 @@ export function SessionPage() {
                         workingNumber={workingN}
                         previous={previous}
                         exerciseName={exercise.name}
-                        restSeconds={exercise.restSeconds}
+                        rests={exercise.rests}
                         allTimePr={prByExercise.get(nameKey) ?? null}
                         onChange={(patch) =>
                           updateSet.mutate({

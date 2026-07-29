@@ -129,9 +129,9 @@ export function SessionDetailPage() {
                 </div>
                 <ul>
                   {exercise.sets.map((set) => {
-                    if (set.type === 'normal') workingIndex += 1;
+                    if (set.type === 'WS') workingIndex += 1;
                     const workingN =
-                      set.type === 'normal' ? workingIndex : undefined;
+                      set.type === 'WS' ? workingIndex : undefined;
                     return (
                       <li
                         key={set.id}

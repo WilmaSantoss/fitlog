@@ -2,7 +2,10 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRestTimerStore } from '@/shared/state/rest-timer.store';
 import { playEventSound } from '@/shared/lib/sound';
-import { cancelRestEndNotification } from '@/shared/lib/push';
+import {
+  cancelRestEndNotification,
+  showLocalRestEndNotification,
+} from '@/shared/lib/push';
 import { formatClock } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/cn';
 
@@ -36,13 +39,20 @@ export function RestTimerBar() {
     };
   }, [secondsLeft, tick]);
 
-  // Som + vibração quando zerar
+  // Som + vibração + notif local quando zerar. Dispara a notif direto do
+  // cliente pra evitar o delay de até 15s do pg_cron+dispatch, e cancela o
+  // push agendado pra não duplicar.
   useEffect(() => {
     if (secondsLeft === 0 && !playedZeroRef.current) {
       playedZeroRef.current = true;
       playEventSound('restDone');
       if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
         navigator.vibrate([180, 100, 180, 100, 320]);
+      }
+      const { restSessionId, exerciseName } = useRestTimerStore.getState();
+      if (restSessionId) {
+        void showLocalRestEndNotification(restSessionId, exerciseName);
+        void cancelRestEndNotification(restSessionId);
       }
       const id = window.setTimeout(() => skip(), 1800);
       return () => window.clearTimeout(id);

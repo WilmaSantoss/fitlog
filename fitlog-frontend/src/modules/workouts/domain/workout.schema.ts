@@ -14,11 +14,17 @@ export const plannedSetSchema = z.object({
   weightKg: optionalDecimalString,
 });
 
+export const restByTypeSchema = z.object({
+  WU: optionalRestString,
+  FS: optionalRestString,
+  WS: optionalRestString,
+});
+
 export const routineExerciseSchema = z.object({
   id: z.string(),
   name: z.string().trim().min(1, 'Obrigatório.'),
   notes: optionalString,
-  restSeconds: optionalRestString,
+  rests: restByTypeSchema,
   videoUrl: z.string().nullable().default(null),
   sets: z.array(plannedSetSchema).min(1, 'Adicione pelo menos uma série.'),
 });

@@ -1,19 +1,14 @@
-export type SetType =
-  | 'warmup'
-  | 'normal'
-  | 'failure'
-  | 'dropset'
-  | 'cluster'
-  | 'restPause';
+export type SetType = 'WU' | 'FS' | 'WS';
 
-export const SET_TYPES: readonly SetType[] = [
-  'warmup',
-  'normal',
-  'failure',
-  'dropset',
-  'cluster',
-  'restPause',
-] as const;
+export const SET_TYPES: readonly SetType[] = ['WU', 'FS', 'WS'] as const;
+
+export type RestByType = {
+  readonly WU: number | null;
+  readonly FS: number | null;
+  readonly WS: number | null;
+};
+
+export const EMPTY_RESTS: RestByType = { WU: null, FS: null, WS: null };
 
 export type PlannedSet = {
   readonly id: string;
@@ -26,7 +21,7 @@ export type RoutineExercise = {
   readonly id: string;
   readonly name: string;
   readonly notes: string | null;
-  readonly restSeconds: number | null;
+  readonly rests: RestByType;
   readonly videoUrl: string | null;
   readonly sets: readonly PlannedSet[];
 };
@@ -56,7 +51,7 @@ export type SessionExercise = {
   readonly id: string;
   readonly name: string;
   readonly notes: string | null;
-  readonly restSeconds: number | null;
+  readonly rests: RestByType;
   readonly videoUrl: string | null;
   readonly sets: readonly SessionSet[];
   readonly completedAt: string | null;

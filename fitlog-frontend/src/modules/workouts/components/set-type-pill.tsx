@@ -9,26 +9,20 @@ type Props = {
 };
 
 const styles: Record<SetType, string> = {
-  warmup: 'text-warmup',
-  normal: 'text-fg',
-  failure: 'text-failure',
-  dropset: 'text-dropset',
-  cluster:
-    'text-cluster ring-1 ring-cluster/60 bg-cluster/10 rounded-md',
-  restPause:
-    'text-restpause ring-1 ring-restpause/60 bg-restpause/10 rounded-md',
+  WU: 'text-warmup',
+  FS: 'text-feeder',
+  WS: 'text-working',
 };
 
 export function SetTypePill({ type, workingNumber, className }: Props) {
   const { t } = useTranslation();
+  // WS mostra o número da série de trabalho (1, 2, 3…); WU/FS mostram a sigla.
   const label =
-    type === 'normal'
-      ? String(workingNumber ?? '·')
-      : t(`workouts.setTypeShort.${type}`);
+    type === 'WS' ? String(workingNumber ?? 'WS') : type;
   return (
     <span
       className={cn(
-        'inline-flex h-7 w-7 items-center justify-center text-sm font-bold',
+        'inline-flex h-7 min-w-7 items-center justify-center px-1 text-sm font-bold tabular-nums',
         styles[type],
         className,
       )}

@@ -28,6 +28,10 @@ function toStr(v: number | null): string {
   return v === null ? '' : String(v);
 }
 
+function emptyRests() {
+  return { WU: '', FS: '', WS: '' };
+}
+
 function buildDefaults(initial?: Routine): RoutineFormValues {
   if (!initial) {
     return {
@@ -38,12 +42,12 @@ function buildDefaults(initial?: Routine): RoutineFormValues {
           id: newId(),
           name: '',
           notes: '',
-          restSeconds: '',
+          rests: emptyRests(),
           videoUrl: null,
           sets: [
             {
               id: newId(),
-              type: 'normal',
+              type: 'WS',
               reps: '',
               weightKg: '',
             },
@@ -59,7 +63,11 @@ function buildDefaults(initial?: Routine): RoutineFormValues {
       id: ex.id,
       name: ex.name,
       notes: ex.notes ?? '',
-      restSeconds: formatRestInput(ex.restSeconds),
+      rests: {
+        WU: formatRestInput(ex.rests.WU),
+        FS: formatRestInput(ex.rests.FS),
+        WS: formatRestInput(ex.rests.WS),
+      },
       videoUrl: ex.videoUrl ?? null,
       sets: ex.sets.map((s) => ({
         id: s.id,
@@ -96,7 +104,7 @@ export function RoutineForm({ initial, onSubmit, submitting }: Props) {
         id: ex.id,
         name: ex.name,
         notes: ex.notes,
-        restSeconds: ex.restSeconds,
+        rests: ex.rests,
         videoUrl: ex.videoUrl,
         sets: ex.sets.map((s) => ({
           id: s.id,
@@ -161,12 +169,12 @@ export function RoutineForm({ initial, onSubmit, submitting }: Props) {
             id: newId(),
             name: '',
             notes: '',
-            restSeconds: '',
+            rests: emptyRests(),
             videoUrl: null,
             sets: [
               {
                 id: newId(),
-                type: 'normal',
+                type: 'WS',
                 reps: '',
                 weightKg: '',
               },

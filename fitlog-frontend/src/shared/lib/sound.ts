@@ -79,7 +79,7 @@ function playDefault(event: SoundEvent): void {
 }
 
 const EVENT_MAX_MS: Partial<Record<SoundEvent, number>> = {
-  restDone: 4000,
+  restDone: 5000,
   pr: 4000,
 };
 

@@ -130,11 +130,20 @@ export function RoutineDetailPage() {
                   {exercise.notes}
                 </p>
               )}
-              {exercise.restSeconds !== null && (
-                <p className="mt-1 text-xs text-accent">
-                  {t('workouts.rest')}: {formatDuration(exercise.restSeconds)}
-                </p>
-              )}
+              {(() => {
+                const parts: string[] = [];
+                if (exercise.rests.WU !== null)
+                  parts.push(`WU ${formatDuration(exercise.rests.WU)}`);
+                if (exercise.rests.FS !== null)
+                  parts.push(`FS ${formatDuration(exercise.rests.FS)}`);
+                if (exercise.rests.WS !== null)
+                  parts.push(`WS ${formatDuration(exercise.rests.WS)}`);
+                return parts.length > 0 ? (
+                  <p className="mt-1 text-xs text-accent">
+                    {t('workouts.rest')}: {parts.join(' · ')}
+                  </p>
+                ) : null;
+              })()}
               <div className="mt-3 grid grid-cols-[3.5rem_1fr_1fr] gap-2 text-xs uppercase tracking-wide text-fg-subtle">
                 <span>{t('workouts.set')}</span>
                 <span>{t('workouts.weight')}</span>
@@ -142,8 +151,8 @@ export function RoutineDetailPage() {
               </div>
               <ul className="mt-1 flex flex-col">
                 {exercise.sets.map((set) => {
-                  if (set.type === 'normal') workingIndex += 1;
-                  const workingN = set.type === 'normal' ? workingIndex : undefined;
+                  if (set.type === 'WS') workingIndex += 1;
+                  const workingN = set.type === 'WS' ? workingIndex : undefined;
                   return (
                     <li
                       key={set.id}

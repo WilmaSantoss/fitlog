@@ -6,6 +6,7 @@ import {
 } from '../repository/routine.repository';
 import type {
   PlannedSet,
+  RestByType,
   Routine,
   RoutineExercise,
   SetType,
@@ -22,7 +23,7 @@ export type RoutineExerciseInput = {
   readonly id?: string;
   readonly name: string;
   readonly notes: string | null;
-  readonly restSeconds: number | null;
+  readonly rests: RestByType;
   readonly videoUrl: string | null;
   readonly sets: readonly PlannedSetInput[];
 };
@@ -56,7 +57,7 @@ function materializeExercise(e: RoutineExerciseInput): RoutineExercise {
     id: e.id ?? newId(),
     name: e.name,
     notes: e.notes,
-    restSeconds: e.restSeconds,
+    rests: e.rests,
     videoUrl: e.videoUrl,
     sets: e.sets.map(materializeSet),
   };
@@ -114,7 +115,7 @@ class RoutineService implements IRoutineService {
       exercises: source.exercises.map((e) => ({
         name: e.name,
         notes: e.notes,
-        restSeconds: e.restSeconds,
+        rests: e.rests,
         videoUrl: e.videoUrl,
         sets: e.sets.map((s) => ({
           type: s.type,

@@ -83,7 +83,7 @@ function sessionFromRoutine(routine: Routine): WorkoutSession {
     id: newId(),
     name: e.name,
     notes: e.notes,
-    restSeconds: e.restSeconds,
+    rests: e.rests,
     videoUrl: e.videoUrl,
     sets: e.sets.map<SessionSet>((s) => ({
       id: newId(),

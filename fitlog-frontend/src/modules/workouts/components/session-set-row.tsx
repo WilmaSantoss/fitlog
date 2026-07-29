@@ -3,7 +3,7 @@ import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/shared/lib/cn';
 import { SetTypePill } from './set-type-pill';
-import type { SessionSet } from '../domain/workout.types';
+import type { RestByType, SessionSet } from '../domain/workout.types';
 import type { ExercisePr, PreviousSet } from '../services/session.service';
 import { useCelebrationStore } from '@/shared/state/celebration.store';
 import { useRestTimerStore } from '@/shared/state/rest-timer.store';
@@ -14,7 +14,7 @@ type Props = {
   workingNumber?: number;
   previous?: PreviousSet | null;
   exerciseName: string;
-  restSeconds: number | null;
+  rests: RestByType;
   allTimePr?: ExercisePr | null;
   onChange: (patch: {
     actualWeightKg?: number | null;
@@ -43,7 +43,7 @@ export function SessionSetRow({
   workingNumber,
   previous,
   exerciseName,
-  restSeconds,
+  rests,
   allTimePr,
   onChange,
 }: Props) {
@@ -129,11 +129,16 @@ export function SessionSetRow({
           if (newReps !== set.actualReps) patch.actualReps = newReps;
           onChange(patch);
 
-          if (willComplete && restSeconds && restSeconds > 0) {
-            startRest(restSeconds, exerciseName);
+          // Se o tipo do set não tem descanso configurado, cai pra qualquer
+          // outro que tenha (WS > FS > WU). Rotinas legadas migram os 3 iguais,
+          // mas rotinas novas podem ter só um preenchido.
+          const restForSet =
+            rests[set.type] ?? rests.WS ?? rests.FS ?? rests.WU ?? null;
+          if (willComplete && restForSet && restForSet > 0) {
+            startRest(restForSet, exerciseName);
             const sessionId = useRestTimerStore.getState().restSessionId;
             if (sessionId) {
-              void scheduleRestEndNotification(sessionId, restSeconds, exerciseName);
+              void scheduleRestEndNotification(sessionId, restForSet, exerciseName);
             }
           }
           if (willComplete) {

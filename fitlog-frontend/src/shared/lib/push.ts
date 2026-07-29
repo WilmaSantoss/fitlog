@@ -125,6 +125,33 @@ export async function scheduleRestEndNotification(
   }
 }
 
+// Dispara a notif de fim de descanso na hora, sem esperar o push do servidor.
+// O dispatch-notifications tem até 15s de latência (pg_cron); enquanto o app
+// tá aberto, faz mais sentido a gente mesmo mostrar o banner. Usamos o mesmo
+// `tag` do push agendado pra que, se ele chegar depois, substitua em vez de
+// duplicar. E cancelamos o push agendado como best-effort.
+export async function showLocalRestEndNotification(
+  restSessionId: string,
+  exerciseName: string | null,
+): Promise<void> {
+  if (!isPushSupported()) return;
+  if (Notification.permission !== 'granted') return;
+  try {
+    const reg = await getRegistration();
+    await reg.showNotification('Descanso terminado', {
+      body: exerciseName
+        ? `Próxima série: ${exerciseName}`
+        : 'Bora pra próxima série!',
+      tag: restSessionId,
+      icon: '/pwa-192.svg',
+      badge: '/pwa-192.svg',
+      renotify: true,
+    } as NotificationOptions & { renotify?: boolean });
+  } catch {
+    // ignora — o push agendado ainda cobre o caso
+  }
+}
+
 export async function cancelRestEndNotification(restSessionId: string): Promise<void> {
   if (!usePushPrefsStore.getState().restEndEnabled) return;
   if (!isPushSupported()) return;

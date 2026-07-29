@@ -50,6 +50,7 @@ export function ExerciseBlock({
   });
 
   const exerciseErrors = errors.exercises?.[index];
+  const restsErrors = exerciseErrors?.rests;
 
   return (
     <Card className="flex flex-col gap-3">
@@ -79,35 +80,74 @@ export function ExerciseBlock({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <FormField
-          label={t('workouts.rest')}
-          htmlFor={`exercises.${index}.restSeconds`}
-          optional
-          error={exerciseErrors?.restSeconds?.message}
-        >
-          <Input
-            id={`exercises.${index}.restSeconds`}
-            type="text"
-            inputMode="text"
-            placeholder="90 ou 1:30"
-            invalid={!!exerciseErrors?.restSeconds}
-            {...register(`exercises.${index}.restSeconds` as const)}
-          />
-        </FormField>
-        <FormField
-          label={t('workouts.exerciseNotes')}
-          htmlFor={`exercises.${index}.notes`}
-          optional
-          error={exerciseErrors?.notes?.message}
-        >
-          <Input
-            id={`exercises.${index}.notes`}
-            placeholder="—"
-            {...register(`exercises.${index}.notes` as const)}
-          />
-        </FormField>
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium text-fg-muted">
+          {t('workouts.restsByTypeLabel')}
+        </span>
+        <div className="grid grid-cols-3 gap-2">
+          <FormField
+            label="WU"
+            htmlFor={`exercises.${index}.rests.WU`}
+            optional
+            error={restsErrors?.WU?.message}
+          >
+            <Input
+              id={`exercises.${index}.rests.WU`}
+              type="text"
+              inputMode="text"
+              placeholder="—"
+              invalid={!!restsErrors?.WU}
+              {...register(`exercises.${index}.rests.WU` as const)}
+            />
+          </FormField>
+          <FormField
+            label="FS"
+            htmlFor={`exercises.${index}.rests.FS`}
+            optional
+            error={restsErrors?.FS?.message}
+          >
+            <Input
+              id={`exercises.${index}.rests.FS`}
+              type="text"
+              inputMode="text"
+              placeholder="—"
+              invalid={!!restsErrors?.FS}
+              {...register(`exercises.${index}.rests.FS` as const)}
+            />
+          </FormField>
+          <FormField
+            label="WS"
+            htmlFor={`exercises.${index}.rests.WS`}
+            optional
+            error={restsErrors?.WS?.message}
+          >
+            <Input
+              id={`exercises.${index}.rests.WS`}
+              type="text"
+              inputMode="text"
+              placeholder="—"
+              invalid={!!restsErrors?.WS}
+              {...register(`exercises.${index}.rests.WS` as const)}
+            />
+          </FormField>
+        </div>
+        <span className="text-xs text-fg-subtle">
+          {t('workouts.restsByTypeHint')}
+        </span>
       </div>
+
+      <FormField
+        label={t('workouts.exerciseNotes')}
+        htmlFor={`exercises.${index}.notes`}
+        optional
+        error={exerciseErrors?.notes?.message}
+      >
+        <Input
+          id={`exercises.${index}.notes`}
+          placeholder="—"
+          {...register(`exercises.${index}.notes` as const)}
+        />
+      </FormField>
 
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-medium text-fg-muted">
@@ -128,6 +168,9 @@ export function ExerciseBlock({
       </div>
 
       <div>
+        <p className="mb-1 text-[11px] text-fg-subtle">
+          {t('workouts.setTypesLegend')}
+        </p>
         <div className="mb-2 grid grid-cols-[3.5rem_1fr_1fr_2.25rem] items-center gap-2 px-1 text-xs uppercase tracking-wide text-fg-subtle">
           <span>Tipo</span>
           <span>{t('workouts.weight')}</span>
@@ -150,8 +193,8 @@ export function ExerciseBlock({
                   )}
                 >
                   {SET_TYPES.map((type: SetType) => (
-                    <option key={type} value={type}>
-                      {t(`workouts.setTypeShort.${type}`, { n: setIndex + 1 })}
+                    <option key={type} value={type} title={t(`workouts.setTypes.${type}`)}>
+                      {type}
                     </option>
                   ))}
                 </Select>
@@ -199,7 +242,7 @@ export function ExerciseBlock({
           onClick={() =>
             append({
               id: newId(),
-              type: 'normal',
+              type: 'WS',
               reps: '',
               weightKg: '',
             })

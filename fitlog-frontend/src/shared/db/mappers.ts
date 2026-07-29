@@ -1,6 +1,12 @@
 import type { Measurement } from '@/modules/measurements/domain/measurement.types';
 import type {
+  PlannedSet,
+  RestByType,
   Routine,
+  RoutineExercise,
+  SessionExercise,
+  SessionSet,
+  SetType,
   WorkoutSession,
 } from '@/modules/workouts/domain/workout.types';
 import type { UserProfile } from '@/modules/profile/domain/profile.types';
@@ -84,13 +90,92 @@ export function measurementToRow(
 
 // ------------------- Routines -------------------
 
+// Tipos "crus" pra tolerar exercícios salvos antes da mudança de SetType/rest.
+// Não removemos suporte por enquanto — usuárias existentes têm dados no formato antigo.
+type LegacySetType =
+  | 'warmup'
+  | 'normal'
+  | 'failure'
+  | 'dropset'
+  | 'cluster'
+  | 'restPause'
+  | SetType;
+
+type StoredPlannedSet = Omit<PlannedSet, 'type'> & { type: LegacySetType };
+type StoredSessionSet = Omit<SessionSet, 'type'> & { type: LegacySetType };
+
+type StoredExerciseCommon = {
+  rests?: Partial<RestByType> | null;
+  restSeconds?: number | null;
+};
+
+type StoredRoutineExercise = Omit<RoutineExercise, 'rests' | 'sets'> &
+  StoredExerciseCommon & { sets: readonly StoredPlannedSet[] };
+
+type StoredSessionExercise = Omit<SessionExercise, 'rests' | 'sets'> &
+  StoredExerciseCommon & { sets: readonly StoredSessionSet[] };
+
+function migrateSetType(t: LegacySetType | string | null | undefined): SetType {
+  if (t === 'WU' || t === 'FS' || t === 'WS') return t;
+  if (t === 'warmup') return 'WU';
+  return 'WS';
+}
+
+function migrateRests(
+  rests: Partial<RestByType> | null | undefined,
+  legacy: number | null | undefined,
+): RestByType {
+  const fallback = legacy ?? null;
+  return {
+    WU: rests?.WU ?? fallback,
+    FS: rests?.FS ?? fallback,
+    WS: rests?.WS ?? fallback,
+  };
+}
+
+function migrateRoutineExercise(e: StoredRoutineExercise): RoutineExercise {
+  return {
+    id: e.id,
+    name: e.name,
+    notes: e.notes,
+    rests: migrateRests(e.rests, e.restSeconds),
+    videoUrl: e.videoUrl ?? null,
+    sets: e.sets.map((s) => ({
+      id: s.id,
+      type: migrateSetType(s.type),
+      reps: s.reps,
+      weightKg: s.weightKg,
+    })),
+  };
+}
+
+function migrateSessionExercise(e: StoredSessionExercise): SessionExercise {
+  return {
+    id: e.id,
+    name: e.name,
+    notes: e.notes,
+    rests: migrateRests(e.rests, e.restSeconds),
+    videoUrl: e.videoUrl ?? null,
+    sets: e.sets.map((s) => ({
+      id: s.id,
+      type: migrateSetType(s.type),
+      plannedReps: s.plannedReps,
+      plannedWeightKg: s.plannedWeightKg,
+      actualReps: s.actualReps,
+      actualWeightKg: s.actualWeightKg,
+      completed: s.completed,
+    })),
+    completedAt: e.completedAt,
+  };
+}
+
 export type RoutineRow = {
   id: string;
   user_id: string;
   name: string;
   notes: string | null;
   position: number;
-  exercises: Routine['exercises'];
+  exercises: readonly StoredRoutineExercise[];
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
@@ -102,7 +187,7 @@ export function routineFromRow(row: RoutineRow): Routine {
     name: row.name,
     notes: row.notes,
     position: row.position,
-    exercises: row.exercises,
+    exercises: row.exercises.map(migrateRoutineExercise),
     isDeleted: row.is_deleted,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -134,7 +219,7 @@ export type WorkoutSessionRow = {
   notes: string | null;
   started_at: string;
   finished_at: string | null;
-  exercises: WorkoutSession['exercises'];
+  exercises: readonly StoredSessionExercise[];
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
@@ -148,7 +233,7 @@ export function sessionFromRow(row: WorkoutSessionRow): WorkoutSession {
     notes: row.notes,
     startedAt: row.started_at,
     finishedAt: row.finished_at,
-    exercises: row.exercises,
+    exercises: row.exercises.map(migrateSessionExercise),
     isDeleted: row.is_deleted,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

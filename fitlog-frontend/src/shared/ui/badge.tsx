@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
 
-export type BadgeTone = 'default' | 'accent' | 'warmup' | 'failure' | 'dropset' | 'success';
+export type BadgeTone = 'default' | 'accent' | 'warmup' | 'failure' | 'feeder' | 'success';
 
 type Props = {
   children: ReactNode;
@@ -14,7 +14,7 @@ const toneClasses: Record<BadgeTone, string> = {
   accent: 'bg-accent/15 text-accent',
   warmup: 'text-warmup',
   failure: 'text-failure',
-  dropset: 'text-dropset',
+  feeder: 'text-feeder',
   success: 'bg-success/15 text-success',
 };
 
