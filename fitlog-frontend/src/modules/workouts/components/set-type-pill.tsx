@@ -4,7 +4,6 @@ import type { SetType } from '../domain/workout.types';
 
 type Props = {
   type: SetType;
-  workingNumber?: number;
   className?: string;
 };
 
@@ -14,11 +13,8 @@ const styles: Record<SetType, string> = {
   WS: 'text-working',
 };
 
-export function SetTypePill({ type, workingNumber, className }: Props) {
+export function SetTypePill({ type, className }: Props) {
   const { t } = useTranslation();
-  // WS mostra o número da série de trabalho (1, 2, 3…); WU/FS mostram a sigla.
-  const label =
-    type === 'WS' ? String(workingNumber ?? 'WS') : type;
   return (
     <span
       className={cn(
@@ -28,7 +24,7 @@ export function SetTypePill({ type, workingNumber, className }: Props) {
       )}
       title={t(`workouts.setTypes.${type}`)}
     >
-      {label}
+      {type}
     </span>
   );
 }

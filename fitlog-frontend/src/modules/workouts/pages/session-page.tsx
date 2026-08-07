@@ -183,7 +183,6 @@ export function SessionPage() {
 
       <ul className="flex flex-col gap-3">
         {session.exercises.map((exercise, exIdx) => {
-          let workingIndex = 0;
           const nameKey = exercise.name.trim().toLowerCase();
           const previousSets = previousMap.get(nameKey) ?? [];
           const averageSec = averagesMap.get(nameKey) ?? null;
@@ -274,15 +273,11 @@ export function SessionPage() {
                 </div>
                 <div className="mt-1 flex flex-col gap-1">
                   {exercise.sets.map((set, idx) => {
-                    if (set.type === 'WS') workingIndex += 1;
-                    const workingN =
-                      set.type === 'WS' ? workingIndex : undefined;
                     const previous = previousSets[idx] ?? null;
                     return (
                       <SessionSetRow
                         key={set.id}
                         set={set}
-                        workingNumber={workingN}
                         previous={previous}
                         exerciseName={exercise.name}
                         rests={exercise.rests}

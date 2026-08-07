@@ -113,56 +113,48 @@ export function SessionDetailPage() {
       )}
 
       <ul className="flex flex-col gap-3">
-        {session.exercises.map((exercise) => {
-          let workingIndex = 0;
-          return (
-            <li key={exercise.id}>
-              <Card>
-                <h2 className="text-base font-semibold text-accent">
-                  {exercise.name}
-                </h2>
-                <div className="mt-3 grid grid-cols-[2.25rem_1fr_1fr_2rem] gap-2 text-xs uppercase tracking-wide text-fg-subtle">
-                  <span>{t('workouts.set')}</span>
-                  <span>{t('workouts.weight')}</span>
-                  <span>{t('workouts.reps')}</span>
-                  <span />
-                </div>
-                <ul>
-                  {exercise.sets.map((set) => {
-                    if (set.type === 'WS') workingIndex += 1;
-                    const workingN =
-                      set.type === 'WS' ? workingIndex : undefined;
-                    return (
-                      <li
-                        key={set.id}
-                        className="grid grid-cols-[2.25rem_1fr_1fr_2rem] items-center gap-2 border-t border-line/40 py-2 text-sm"
-                      >
-                        <SetTypePill type={set.type} workingNumber={workingN} />
-                        <span className="text-fg">
-                          {formatKg(set.actualWeightKg ?? set.plannedWeightKg)}
-                        </span>
-                        <span className="text-fg">
-                          {set.actualReps !== null
-                            ? formatInt(set.actualReps)
-                            : (set.plannedReps ?? '—')}
-                        </span>
-                        <span
-                          className={
-                            set.completed
-                              ? 'text-success text-base'
-                              : 'text-fg-subtle text-base'
-                          }
-                        >
-                          {set.completed ? '✓' : '·'}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </Card>
-            </li>
-          );
-        })}
+        {session.exercises.map((exercise) => (
+          <li key={exercise.id}>
+            <Card>
+              <h2 className="text-base font-semibold text-accent">
+                {exercise.name}
+              </h2>
+              <div className="mt-3 grid grid-cols-[2.25rem_1fr_1fr_2rem] gap-2 text-xs uppercase tracking-wide text-fg-subtle">
+                <span>{t('workouts.set')}</span>
+                <span>{t('workouts.weight')}</span>
+                <span>{t('workouts.reps')}</span>
+                <span />
+              </div>
+              <ul>
+                {exercise.sets.map((set) => (
+                  <li
+                    key={set.id}
+                    className="grid grid-cols-[2.25rem_1fr_1fr_2rem] items-center gap-2 border-t border-line/40 py-2 text-sm"
+                  >
+                    <SetTypePill type={set.type} />
+                    <span className="text-fg">
+                      {formatKg(set.actualWeightKg ?? set.plannedWeightKg)}
+                    </span>
+                    <span className="text-fg">
+                      {set.actualReps !== null
+                        ? formatInt(set.actualReps)
+                        : (set.plannedReps ?? '—')}
+                    </span>
+                    <span
+                      className={
+                        set.completed
+                          ? 'text-success text-base'
+                          : 'text-fg-subtle text-base'
+                      }
+                    >
+                      {set.completed ? '✓' : '·'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          </li>
+        ))}
       </ul>
 
       <ConfirmDialog

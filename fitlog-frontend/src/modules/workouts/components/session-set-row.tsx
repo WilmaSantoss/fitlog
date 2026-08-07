@@ -11,7 +11,6 @@ import { scheduleRestEndNotification } from '@/shared/lib/push';
 
 type Props = {
   set: SessionSet;
-  workingNumber?: number;
   previous?: PreviousSet | null;
   exerciseName: string;
   rests: RestByType;
@@ -40,7 +39,6 @@ function parseNum(v: string): number | null {
 
 export function SessionSetRow({
   set,
-  workingNumber,
   previous,
   exerciseName,
   rests,
@@ -87,7 +85,7 @@ export function SessionSetRow({
         set.completed && 'ring-1 ring-inset ring-success/50',
       )}
     >
-      <SetTypePill type={set.type} workingNumber={workingNumber} />
+      <SetTypePill type={set.type} />
       <span className="truncate text-sm text-fg-muted">{previousLabel}</span>
       <input
         type="text"

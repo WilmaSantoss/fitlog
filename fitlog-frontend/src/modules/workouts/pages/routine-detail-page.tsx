@@ -70,7 +70,6 @@ export function RoutineDetailPage() {
     );
   }
 
-  let workingIndex = 0;
   return (
     <>
       <PageHeader
@@ -150,20 +149,16 @@ export function RoutineDetailPage() {
                 <span>{t('workouts.reps')}</span>
               </div>
               <ul className="mt-1 flex flex-col">
-                {exercise.sets.map((set) => {
-                  if (set.type === 'WS') workingIndex += 1;
-                  const workingN = set.type === 'WS' ? workingIndex : undefined;
-                  return (
-                    <li
-                      key={set.id}
-                      className="grid grid-cols-[3.5rem_1fr_1fr] items-center gap-2 border-t border-line/40 py-2 text-sm"
-                    >
-                      <SetTypePill type={set.type} workingNumber={workingN} />
-                      <span className="text-fg">{formatKg(set.weightKg)}</span>
-                      <span className="text-fg">{set.reps ?? '—'}</span>
-                    </li>
-                  );
-                })}
+                {exercise.sets.map((set) => (
+                  <li
+                    key={set.id}
+                    className="grid grid-cols-[3.5rem_1fr_1fr] items-center gap-2 border-t border-line/40 py-2 text-sm"
+                  >
+                    <SetTypePill type={set.type} />
+                    <span className="text-fg">{formatKg(set.weightKg)}</span>
+                    <span className="text-fg">{set.reps ?? '—'}</span>
+                  </li>
+                ))}
               </ul>
             </Card>
           </li>
