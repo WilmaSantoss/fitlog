@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { CheckCircle2, RefreshCw } from 'lucide-react';
 
-const JUST_UPDATED_KEY = 'fitlog:just-updated';
+// Versão da última execução vista, usada pra decidir se o toast de
+// "app atualizado" deve aparecer nesta abertura. Comparamos com
+// __APP_VERSION__ (injetado no build a partir do package.json), então
+// funciona tanto quando o usuário clica em "Atualizar" quanto quando o
+// iOS PWA atualiza silenciosamente em segundo plano.
+const LAST_VERSION_KEY = 'fitlog:last-version';
 
 export function UpdatePrompt() {
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
@@ -45,15 +50,20 @@ export function UpdatePrompt() {
     };
   }, []);
 
-  // Após o reload disparado pelo updateServiceWorker, mostra confirmação.
+  // Compara a versão atual do bundle com a última vista. Se mudou (e não é
+  // a primeira instalação), mostra o toast e grava a nova versão.
   const [justUpdated, setJustUpdated] = useState(false);
   useEffect(() => {
     try {
-      if (localStorage.getItem(JUST_UPDATED_KEY) === '1') {
-        localStorage.removeItem(JUST_UPDATED_KEY);
+      const previous = localStorage.getItem(LAST_VERSION_KEY);
+      if (previous && previous !== __APP_VERSION__) {
         setJustUpdated(true);
         const id = window.setTimeout(() => setJustUpdated(false), 3500);
+        localStorage.setItem(LAST_VERSION_KEY, __APP_VERSION__);
         return () => window.clearTimeout(id);
+      }
+      if (!previous) {
+        localStorage.setItem(LAST_VERSION_KEY, __APP_VERSION__);
       }
     } catch {
       // localStorage indisponível — ignora
@@ -61,11 +71,6 @@ export function UpdatePrompt() {
   }, []);
 
   const handleUpdate = () => {
-    try {
-      localStorage.setItem(JUST_UPDATED_KEY, '1');
-    } catch {
-      // ignora
-    }
     void updateServiceWorker(true);
   };
 
