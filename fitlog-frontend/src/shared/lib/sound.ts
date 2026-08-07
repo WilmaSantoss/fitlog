@@ -29,8 +29,20 @@ function configureAmbientAudioSession(): void {
 
 configureAmbientAudioSession();
 
-let currentAudio: HTMLAudioElement | null = null;
+// Reproduzimos MP3s via Web Audio (decode → BufferSource) em vez de
+// <audio> HTML. Motivo: com audioSession=ambient o iOS silencia o
+// HTMLAudioElement, mas Web Audio continua tocando normalmente.
+// Bônus: buffer decodificado é cacheado, então tocar de novo é
+// instantâneo (sem network nem decode).
+type CurrentPlayback = {
+  source: AudioBufferSourceNode;
+  gain: GainNode;
+  ctx: AudioContext;
+};
+
+let currentPlayback: CurrentPlayback | null = null;
 let currentTimers: number[] = [];
+const bufferCache = new Map<string, Promise<AudioBuffer>>();
 
 function clearCurrentTimers(): void {
   for (const id of currentTimers) window.clearTimeout(id);
@@ -39,55 +51,74 @@ function clearCurrentTimers(): void {
 
 function stopCurrentAudio(): void {
   clearCurrentTimers();
-  if (currentAudio) {
-    const a = currentAudio;
-    currentAudio = null;
+  if (currentPlayback) {
+    const { source, gain } = currentPlayback;
+    currentPlayback = null;
     try {
-      a.pause();
-      a.currentTime = 0;
-      a.volume = 0;
-      a.src = '';
-      a.load();
+      gain.gain.value = 0;
+      source.stop();
+      source.disconnect();
+      gain.disconnect();
     } catch {
-      // ignorar
+      // fonte já parada — ignora
     }
   }
 }
 
-function playFile(event: SoundEvent, file: string, maxMs?: number): void {
-  try {
-    stopCurrentAudio();
-    const audio = new Audio(`/sounds/${EVENT_FOLDERS[event]}/${file}`);
-    const baseVolume = 0.9;
-    audio.volume = baseVolume;
-    currentAudio = audio;
-    audio.addEventListener('ended', () => {
-      if (currentAudio === audio) {
-        clearCurrentTimers();
-        currentAudio = null;
-      }
-    });
-    void audio.play();
+function loadBuffer(ctx: AudioContext, url: string): Promise<AudioBuffer> {
+  const cached = bufferCache.get(url);
+  if (cached) return cached;
+  const promise = fetch(url)
+    .then((r) => r.arrayBuffer())
+    .then((buf) => ctx.decodeAudioData(buf));
+  bufferCache.set(url, promise);
+  // Se falhar, remove do cache pra permitir retry no próximo play
+  promise.catch(() => bufferCache.delete(url));
+  return promise;
+}
 
-    if (maxMs && maxMs > 0) {
-      const fadeMs = Math.min(400, maxMs);
-      const steps = 8;
-      const stepMs = fadeMs / steps;
-      const fadeStartAt = Math.max(0, maxMs - fadeMs);
-      for (let i = 1; i <= steps; i += 1) {
-        const id = window.setTimeout(() => {
-          if (currentAudio === audio) audio.volume = baseVolume * (1 - i / steps);
-        }, fadeStartAt + stepMs * i);
-        currentTimers.push(id);
+function playFile(event: SoundEvent, file: string, maxMs?: number): void {
+  const ctx = getCtx();
+  if (!ctx) return;
+  stopCurrentAudio();
+  const url = `/sounds/${EVENT_FOLDERS[event]}/${file}`;
+  const baseVolume = 0.9;
+  void loadBuffer(ctx, url)
+    .then((buffer) => {
+      // Se outra reprodução começou enquanto decodificávamos, desiste
+      if (currentPlayback) return;
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      const gain = ctx.createGain();
+      gain.gain.value = baseVolume;
+      source.connect(gain).connect(ctx.destination);
+      const playback: CurrentPlayback = { source, gain, ctx };
+      currentPlayback = playback;
+      source.onended = () => {
+        if (currentPlayback === playback) {
+          clearCurrentTimers();
+          currentPlayback = null;
+        }
+      };
+      const now = ctx.currentTime;
+      source.start(now);
+
+      if (maxMs && maxMs > 0) {
+        const fadeMs = Math.min(400, maxMs);
+        const fadeStartAt = Math.max(0, maxMs - fadeMs) / 1000;
+        const stopAt = maxMs / 1000;
+        gain.gain.setValueAtTime(baseVolume, now + fadeStartAt);
+        gain.gain.linearRampToValueAtTime(0.0001, now + stopAt);
+        try {
+          source.stop(now + stopAt);
+        } catch {
+          // ignora
+        }
       }
-      const stopId = window.setTimeout(() => {
-        if (currentAudio === audio) stopCurrentAudio();
-      }, maxMs);
-      currentTimers.push(stopId);
-    }
-  } catch {
-    // ignorar erros de autoplay/permissão; cai no synth via caller
-  }
+    })
+    .catch(() => {
+      // erro de fetch/decode — silencioso; caller já lida com fallback
+    });
 }
 
 function playDefault(event: SoundEvent): void {
