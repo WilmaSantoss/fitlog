@@ -9,6 +9,26 @@ import {
 } from './sound-options';
 import { useSoundPrefsStore } from '@/shared/state/sound-prefs.store';
 
+// Diz ao Safari (16.4+) que nosso áudio é "ambiente": toca por cima do
+// que já estiver tocando (ex.: Spotify) sem roubar o foco de reprodução.
+// Sem isto, o iOS pausa o Spotify e não retoma. No modo ambient a mídia
+// respeita o interruptor de silencioso do iPhone, o que é o comportamento
+// esperado.
+function configureAmbientAudioSession(): void {
+  if (typeof navigator === 'undefined') return;
+  const nav = navigator as Navigator & {
+    audioSession?: { type: string };
+  };
+  if (!nav.audioSession) return;
+  try {
+    nav.audioSession.type = 'ambient';
+  } catch {
+    // ignora — API pode não estar disponível
+  }
+}
+
+configureAmbientAudioSession();
+
 let currentAudio: HTMLAudioElement | null = null;
 let currentTimers: number[] = [];
 
