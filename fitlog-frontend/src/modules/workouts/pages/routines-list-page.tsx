@@ -323,7 +323,7 @@ function HistoryTab({ isLoading, sessions }: HistoryTabProps) {
                     {stats.totalVolumeKg.toLocaleString('pt-BR')} kg
                   </span>
                   <span className="text-fg-muted">
-                    {stats.completedSets}/{stats.totalSets} séries
+                    {stats.completedExercises}/{stats.totalExercises} exercícios
                   </span>
                 </p>
               </Card>

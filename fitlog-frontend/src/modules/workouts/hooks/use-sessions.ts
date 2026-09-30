@@ -177,6 +177,12 @@ export function useUpdateSessionSet() {
       const pending = qc.isMutating({ mutationKey: UPDATE_SET_MUTATION_KEY });
       if (pending <= 1) {
         void qc.invalidateQueries({ queryKey: KEYS.detail(vars.sessionId) });
+        // Editar sets numa sessão concluída muda PRs, volume e histórico.
+        // Invalidar não custa nada quando a sessão ainda tá ativa.
+        void qc.invalidateQueries({ queryKey: KEYS.finished });
+        void qc.invalidateQueries({ queryKey: KEYS.exerciseSummaries });
+        void qc.invalidateQueries({ queryKey: ['sessions', 'exerciseEvolution'] });
+        void qc.invalidateQueries({ queryKey: ['sessions', 'previous'] });
       }
     },
   });
@@ -198,6 +204,27 @@ export function useUpdateSessionNotes() {
   });
 }
 
+export function useUpdateSessionFinishedAt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      sessionId,
+      finishedAt,
+    }: {
+      readonly sessionId: string;
+      readonly finishedAt: string;
+    }) => sessionService.updateFinishedAt(sessionId, finishedAt),
+    onSuccess: (_d, vars) => {
+      void qc.invalidateQueries({ queryKey: KEYS.detail(vars.sessionId) });
+      void qc.invalidateQueries({ queryKey: KEYS.finished });
+      void qc.invalidateQueries({ queryKey: ['sessions', 'exerciseEvolution'] });
+      void qc.invalidateQueries({
+        queryKey: ['sessions', 'routineExerciseAverages'],
+      });
+    },
+  });
+}
+
 export function useFinishSession() {
   const qc = useQueryClient();
   return useMutation({
@@ -212,6 +239,21 @@ export function useFinishSession() {
       void qc.invalidateQueries({
         queryKey: ['sessions', 'routineExerciseAverages'],
       });
+      // finish() grava os pesos usados na rotina
+      void qc.invalidateQueries({ queryKey: ['routines'] });
+    },
+  });
+}
+
+export function useSyncRoutineWeights() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (sessionId: string) =>
+      serializePerSession(sessionId, () =>
+        sessionService.syncRoutineWeights(sessionId),
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['routines'] });
     },
   });
 }

@@ -252,6 +252,10 @@ export const ptBR = {
     completedAt: 'Concluído em {{date}}',
     summaryStats: '{{exercises}} exercícios · {{sets}} séries · {{volume}} kg',
     exerciseAvg: 'média {{time}}',
+    editSession: 'Editar sessão',
+    doneEditing: 'Concluir edição',
+    finishedAtLabel: 'Horário de conclusão',
+    finishedAtInvalid: 'Horário inválido: deve ser após o início e não pode estar no futuro.',
   },
   profile: {
     title: 'Perfil',

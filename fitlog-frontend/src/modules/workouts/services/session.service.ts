@@ -65,7 +65,9 @@ export interface ISessionService {
     patch: Partial<Pick<SessionSet, 'actualReps' | 'actualWeightKg' | 'completed'>>,
   ): Promise<void>;
   updateNotes(sessionId: string, notes: string | null): Promise<void>;
+  updateFinishedAt(sessionId: string, finishedAt: string): Promise<void>;
   finish(sessionId: string): Promise<void>;
+  syncRoutineWeights(sessionId: string): Promise<void>;
   remove(id: string): Promise<void>;
   stats(session: WorkoutSession): SessionStats;
   previousByExercise(currentSessionId: string): Promise<PreviousByExercise>;
@@ -77,27 +79,61 @@ export interface ISessionService {
   ): Promise<RoutineExerciseAverages>;
 }
 
-function sessionFromRoutine(routine: Routine): WorkoutSession {
+// Peso por posição de série (null onde a série não foi feita), por nome de
+// exercício, tirado do treino finalizado mais recente que tem aquele exercício.
+type LastWeightsByExercise = ReadonlyMap<string, readonly (number | null)[]>;
+
+function lastWeightsByExercise(finished: readonly WorkoutSession[]): LastWeightsByExercise {
+  const map = new Map<string, (number | null)[]>();
+  const sortedDesc = [...finished].sort((a, b) =>
+    (b.finishedAt ?? b.startedAt).localeCompare(a.finishedAt ?? a.startedAt),
+  );
+  for (const session of sortedDesc) {
+    for (const ex of session.exercises) {
+      const key = ex.name.trim().toLowerCase();
+      if (map.has(key)) continue;
+      const weights = ex.sets.map((s) =>
+        s.completed && s.actualWeightKg !== null ? s.actualWeightKg : null,
+      );
+      if (weights.some((w) => w !== null)) map.set(key, weights);
+    }
+  }
+  return map;
+}
+
+function sessionFromRoutine(
+  routine: Routine,
+  lastWeights: LastWeightsByExercise,
+): WorkoutSession {
   const now = nowUtcIso();
-  const exercises: SessionExercise[] = routine.exercises.map((e) => ({
-    id: newId(),
-    name: e.name,
-    notes: e.notes,
-    rests: e.rests,
-    videoUrl: e.videoUrl,
-    sets: e.sets.map<SessionSet>((s) => ({
+  const exercises: SessionExercise[] = routine.exercises.map((e) => {
+    const last = lastWeights.get(e.name.trim().toLowerCase()) ?? [];
+    return {
       id: newId(),
-      type: s.type,
-      plannedReps: s.reps,
-      plannedWeightKg: s.weightKg,
-      // Não copiamos o plano pro "actual". O plano vira placeholder no input;
-      // a usuária digita o inteiro real feito no treino do dia.
-      actualReps: null,
-      actualWeightKg: null,
-      completed: false,
-    })),
-    completedAt: null,
-  }));
+      name: e.name,
+      notes: e.notes,
+      rests: e.rests,
+      videoUrl: e.videoUrl,
+      sets: e.sets.map<SessionSet>((s, idx) => {
+        // Peso salvo na rotina (atualizado ao finalizar ou editado à mão) tem
+        // prioridade; sem ele, cai pro último treino finalizado.
+        const weightKg = s.weightKg ?? last[idx] ?? null;
+        return {
+          id: newId(),
+          type: s.type,
+          plannedReps: s.reps,
+          plannedWeightKg: weightKg,
+          // Reps do plano são faixa ("5-9") → viram placeholder e a usuária
+          // digita o inteiro feito no dia. O peso já vem preenchido e ela só
+          // edita se mudar.
+          actualReps: null,
+          actualWeightKg: weightKg,
+          completed: false,
+        };
+      }),
+      completedAt: null,
+    };
+  });
   return {
     id: newId(),
     routineId: routine.id,
@@ -124,7 +160,8 @@ class SessionService implements ISessionService {
   async startFromRoutine(routineId: string): Promise<WorkoutSession | undefined> {
     const routine = await this.routines.getById(routineId);
     if (!routine) return undefined;
-    const session = sessionFromRoutine(routine);
+    const finished = await this.sessions.listFinished();
+    const session = sessionFromRoutine(routine, lastWeightsByExercise(finished));
     await this.sessions.insert(session);
     return session;
   }
@@ -170,11 +207,74 @@ class SessionService implements ISessionService {
     await this.sessions.update(sessionId, { notes, updatedAt: nowUtcIso() });
   }
 
+  async updateFinishedAt(sessionId: string, finishedAt: string): Promise<void> {
+    await this.sessions.update(sessionId, {
+      finishedAt,
+      updatedAt: nowUtcIso(),
+    });
+  }
+
   async finish(sessionId: string): Promise<void> {
     const now = nowUtcIso();
     await this.sessions.update(sessionId, {
       finishedAt: now,
       updatedAt: now,
+    });
+    const session = await this.sessions.getById(sessionId);
+    if (session) await this.saveLastWeightsToRoutine(session);
+  }
+
+  // Depois de editar um treino já concluído. Só mexe na rotina se este for o
+  // treino mais recente dela — corrigir um treino antigo não pode sobrescrever
+  // pesos de treinos que vieram depois.
+  async syncRoutineWeights(sessionId: string): Promise<void> {
+    const session = await this.sessions.getById(sessionId);
+    if (!session?.finishedAt || !session.routineId) return;
+    const finished = await this.sessions.listFinished();
+    const newer = finished.some(
+      (s) =>
+        s.routineId === session.routineId &&
+        s.id !== session.id &&
+        (s.finishedAt ?? s.startedAt) > session.finishedAt!,
+    );
+    if (newer) return;
+    await this.saveLastWeightsToRoutine(session);
+  }
+
+  // Grava na rotina o peso de cada série concluída, pra próxima sessão já
+  // começar com ele. Casa exercício por nome (a rotina pode ter sido editada
+  // durante o treino) e série por posição.
+  private async saveLastWeightsToRoutine(session: WorkoutSession): Promise<void> {
+    if (!session.routineId) return;
+    const routine = await this.routines.getById(session.routineId);
+    if (!routine) return;
+    const sessionByName = new Map<string, SessionExercise>();
+    for (const ex of session.exercises) {
+      const key = ex.name.trim().toLowerCase();
+      if (!sessionByName.has(key)) sessionByName.set(key, ex);
+    }
+    let changed = false;
+    const exercises = routine.exercises.map((ex) => {
+      const done = sessionByName.get(ex.name.trim().toLowerCase());
+      if (!done) return ex;
+      const sets = ex.sets.map((s, idx) => {
+        const actual = done.sets[idx];
+        if (
+          !actual?.completed ||
+          actual.actualWeightKg === null ||
+          actual.actualWeightKg === s.weightKg
+        ) {
+          return s;
+        }
+        changed = true;
+        return { ...s, weightKg: actual.actualWeightKg };
+      });
+      return { ...ex, sets };
+    });
+    if (!changed) return;
+    await this.routines.update(routine.id, {
+      exercises,
+      updatedAt: nowUtcIso(),
     });
   }
 

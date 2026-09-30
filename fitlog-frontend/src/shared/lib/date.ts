@@ -56,3 +56,15 @@ export function dateInputToIsoUtc(value: string): string {
 export function isoToDateInput(iso: string): string {
   return iso.slice(0, 10);
 }
+
+// `datetime-local` input trabalha em horário local (sem TZ). Convertemos ida e
+// volta pra ISO UTC pra bater com o que fica salvo no Supabase.
+export function isoToDatetimeLocalInput(iso: string): string {
+  const d = parseISO(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+export function datetimeLocalInputToIso(value: string): string {
+  return new Date(value).toISOString();
+}
