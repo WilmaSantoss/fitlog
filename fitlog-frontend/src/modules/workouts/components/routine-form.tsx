@@ -1,8 +1,7 @@
 import { useForm, useFieldArray, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
-import { Plus, Save } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { formatRestInput } from '@/shared/lib/format';
 import { Button } from '@/shared/ui/button';
 import { FormField } from '@/shared/ui/form-field';
@@ -21,10 +20,11 @@ import {
 import { ExerciseBlock } from './exercise-block';
 import { newId } from '@/shared/lib/uuid';
 
+export const ROUTINE_FORM_ID = 'routine-form';
+
 type Props = {
   initial?: Routine;
   onSubmit: (input: RoutineInput) => Promise<void> | void;
-  submitting?: boolean;
 };
 
 function toStr(v: number | null): string {
@@ -85,9 +85,8 @@ function buildDefaults(initial?: Routine): RoutineFormValues {
   };
 }
 
-export function RoutineForm({ initial, onSubmit, submitting }: Props) {
+export function RoutineForm({ initial, onSubmit }: Props) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
 
   const form = useForm<RoutineFormValues, unknown, RoutineFormParsed>({
     resolver: zodResolver(routineFormSchema),
@@ -125,7 +124,14 @@ export function RoutineForm({ initial, onSubmit, submitting }: Props) {
   };
 
   return (
-    <form onSubmit={handleSubmit(handleValid)} className="flex flex-col gap-4">
+    // Botão Salvar fica no cabeçalho da página (fora do <form>) e aponta pra
+    // cá via atributo form={ROUTINE_FORM_ID}. pb: área do indicador de home
+    // do iPhone, já que a navegação de baixo some nesta tela.
+    <form
+      id={ROUTINE_FORM_ID}
+      onSubmit={handleSubmit(handleValid)}
+      className="flex flex-col gap-4 pb-[env(safe-area-inset-bottom)]"
+    >
       <FormField
         label={t('workouts.routineName')}
         htmlFor="name"
@@ -220,25 +226,6 @@ export function RoutineForm({ initial, onSubmit, submitting }: Props) {
         {t('workouts.addExercise')}
       </Button>
 
-      <div className="sticky bottom-0 z-10 -mx-5 mt-2 flex gap-2 border-t border-line/60 bg-app/90 px-5 py-3 backdrop-blur sm:bg-surface/90">
-        <Button
-          type="button"
-          variant="ghost"
-          fullWidth
-          onClick={() => navigate(-1)}
-          disabled={submitting}
-        >
-          {t('common.cancel')}
-        </Button>
-        <Button
-          type="submit"
-          fullWidth
-          disabled={submitting}
-          leadingIcon={<Save className="h-4 w-4" />}
-        >
-          {t('common.save')}
-        </Button>
-      </div>
     </form>
   );
 }

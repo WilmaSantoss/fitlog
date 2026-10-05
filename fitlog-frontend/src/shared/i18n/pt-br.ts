@@ -131,6 +131,7 @@ export const ptBR = {
     quickCreateRoutine: 'Criar treino',
   },
   measurements: {
+    delete: 'Excluir medida',
     title: 'Medidas',
     new: 'Nova medida',
     edit: 'Editar medida',

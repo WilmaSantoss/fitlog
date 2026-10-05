@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/shared/ui/page-header';
-import { RoutineForm } from '../components/routine-form';
+import { FormHeaderActions } from '@/shared/ui/form-header-actions';
+import { RoutineForm, ROUTINE_FORM_ID } from '../components/routine-form';
 import {
   useCreateRoutine,
   useRoutineQuery,
@@ -41,17 +42,24 @@ export function RoutineFormPage() {
     );
   }
 
+  const submitting = createMutation.isPending || updateMutation.isPending;
+
+  // Padrão de editor: Cancelar + Salvar no cabeçalho fixo. Sem barra embaixo
+  // — nada disputa espaço com o teclado.
   return (
     <>
       <PageHeader
         title={isEdit ? t('workouts.editRoutine') : t('workouts.newRoutine')}
         back
+        actions={
+          <FormHeaderActions
+            formId={ROUTINE_FORM_ID}
+            submitting={submitting}
+            onCancel={() => navigate(-1)}
+          />
+        }
       />
-      <RoutineForm
-        initial={detail.data ?? undefined}
-        onSubmit={handleSubmit}
-        submitting={createMutation.isPending || updateMutation.isPending}
-      />
+      <RoutineForm initial={detail.data ?? undefined} onSubmit={handleSubmit} />
     </>
   );
 }

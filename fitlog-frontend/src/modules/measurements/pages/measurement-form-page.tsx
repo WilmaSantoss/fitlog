@@ -3,9 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { PageHeader } from '@/shared/ui/page-header';
-import { IconButton } from '@/shared/ui/icon-button';
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
-import { MeasurementForm } from '../components/measurement-form';
+import { FormHeaderActions } from '@/shared/ui/form-header-actions';
+import { OverflowMenu } from '@/shared/ui/overflow-menu';
+import {
+  MeasurementForm,
+  MEASUREMENT_FORM_ID,
+} from '../components/measurement-form';
 import {
   useCreateMeasurement,
   useDeleteMeasurement,
@@ -69,15 +73,26 @@ export function MeasurementFormPage() {
         title={isEdit ? t('measurements.edit') : t('measurements.new')}
         back
         actions={
-          isEdit && (
-            <IconButton
-              label={t('common.delete')}
-              tone="danger"
-              onClick={() => setConfirmDeleteOpen(true)}
-            >
-              <Trash2 className="h-5 w-5" />
-            </IconButton>
-          )
+          <>
+            <FormHeaderActions
+              formId={MEASUREMENT_FORM_ID}
+              submitting={createMutation.isPending || updateMutation.isPending}
+              onCancel={() => navigate(-1)}
+            />
+            {isEdit && (
+              <OverflowMenu
+                label={t('common.moreActions')}
+                items={[
+                  {
+                    label: t('measurements.delete'),
+                    icon: <Trash2 className="h-4 w-4" />,
+                    tone: 'danger',
+                    onSelect: () => setConfirmDeleteOpen(true),
+                  },
+                ]}
+              />
+            )}
+          </>
         }
       />
       {errorMsg && (
@@ -85,11 +100,7 @@ export function MeasurementFormPage() {
           {errorMsg}
         </p>
       )}
-      <MeasurementForm
-        initial={detail.data ?? undefined}
-        onSubmit={handleSubmit}
-        submitting={createMutation.isPending || updateMutation.isPending}
-      />
+      <MeasurementForm initial={detail.data ?? undefined} onSubmit={handleSubmit} />
       <ConfirmDialog
         open={confirmDeleteOpen}
         title={t('common.delete')}

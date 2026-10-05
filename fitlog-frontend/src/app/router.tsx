@@ -30,8 +30,13 @@ const router = createBrowserRouter([
           { index: true, element: <HomePage /> },
 
           { path: 'treino', element: <RoutinesListPage /> },
-          { path: 'treino/novo', element: <RoutineFormPage /> },
-          { path: 'treino/:routineId/editar', element: <RoutineFormPage /> },
+          // hideBottomNav: tela de edição tem barra própria (Cancelar/Salvar).
+          { path: 'treino/novo', element: <RoutineFormPage />, handle: { hideBottomNav: true } },
+          {
+            path: 'treino/:routineId/editar',
+            element: <RoutineFormPage />,
+            handle: { hideBottomNav: true },
+          },
           { path: 'treino/:routineId', element: <RoutineDetailPage /> },
           { path: 'treino/sessao/:sessionId', element: <SessionPage /> },
           { path: 'treino/historico/:sessionId', element: <SessionDetailPage /> },
@@ -39,8 +44,12 @@ const router = createBrowserRouter([
           { path: 'exercicios/:exerciseId', element: <ExerciseDetailPage /> },
 
           { path: 'medidas', element: <MeasurementsListPage /> },
-          { path: 'medidas/nova', element: <MeasurementFormPage /> },
-          { path: 'medidas/:measurementId/editar', element: <MeasurementFormPage /> },
+          { path: 'medidas/nova', element: <MeasurementFormPage />, handle: { hideBottomNav: true } },
+          {
+            path: 'medidas/:measurementId/editar',
+            element: <MeasurementFormPage />,
+            handle: { hideBottomNav: true },
+          },
           { path: 'medidas/evolucao', element: <MeasurementEvolutionPage /> },
 
           { path: 'progresso', element: <ProgressPage /> },

@@ -1,9 +1,6 @@
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
-import { Save } from 'lucide-react';
-import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { FormField } from '@/shared/ui/form-field';
 import { Input } from '@/shared/ui/input';
@@ -20,10 +17,11 @@ import {
   todayIsoDateOnly,
 } from '@/shared/lib/date';
 
+export const MEASUREMENT_FORM_ID = 'measurement-form';
+
 type Props = {
   initial?: Measurement;
   onSubmit: (input: MeasurementInput) => Promise<void> | void;
-  submitting?: boolean;
 };
 
 function toStr(value: number | null): string {
@@ -97,9 +95,8 @@ const groups: readonly FieldGroup[] = [
   },
 ];
 
-export function MeasurementForm({ initial, onSubmit, submitting }: Props) {
+export function MeasurementForm({ initial, onSubmit }: Props) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const {
     register,
     handleSubmit,
@@ -130,7 +127,12 @@ export function MeasurementForm({ initial, onSubmit, submitting }: Props) {
   };
 
   return (
-    <form onSubmit={handleSubmit(handleValid)} className="flex flex-col gap-5">
+    // Cancelar/Salvar ficam no cabeçalho da página (form={MEASUREMENT_FORM_ID}).
+    <form
+      id={MEASUREMENT_FORM_ID}
+      onSubmit={handleSubmit(handleValid)}
+      className="flex flex-col gap-5 pb-[env(safe-area-inset-bottom)]"
+    >
       <FormField
         label={t('measurements.fields.recordedAt')}
         htmlFor="recordedAt"
@@ -194,25 +196,6 @@ export function MeasurementForm({ initial, onSubmit, submitting }: Props) {
         <Textarea id="notes" rows={3} {...register('notes')} />
       </FormField>
 
-      <div className="sticky bottom-0 z-10 -mx-5 mt-2 flex gap-2 border-t border-line/60 bg-app/90 px-5 py-3 backdrop-blur sm:bg-surface/90">
-        <Button
-          type="button"
-          variant="ghost"
-          fullWidth
-          onClick={() => navigate(-1)}
-          disabled={submitting}
-        >
-          {t('common.cancel')}
-        </Button>
-        <Button
-          type="submit"
-          fullWidth
-          disabled={submitting}
-          leadingIcon={<Save className="h-4 w-4" />}
-        >
-          {t('common.save')}
-        </Button>
-      </div>
     </form>
   );
 }
