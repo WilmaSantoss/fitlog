@@ -4,10 +4,14 @@ import { useRestTimerStore } from '@/shared/state/rest-timer.store';
 import { playEventSound } from '@/shared/lib/sound';
 import {
   cancelRestEndNotification,
+  scheduleRestEndNotification,
   showLocalRestEndNotification,
 } from '@/shared/lib/push';
 import { formatClock } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/cn';
+
+// Acordou mais que isso depois do fim do descanso = tela estava bloqueada.
+const LATE_WAKE_MS = 3000;
 
 export function RestTimerBar() {
   const { t } = useTranslation();
@@ -45,6 +49,16 @@ export function RestTimerBar() {
   useEffect(() => {
     if (secondsLeft === 0 && !playedZeroRef.current) {
       playedZeroRef.current = true;
+      const { endsAt } = useRestTimerStore.getState();
+      // Com a tela bloqueada o JS fica congelado e só chega aqui quando ela
+      // desbloqueia. Aí o aviso já veio pelo push — tocar agora é só um som
+      // atrasado. Fecha o timer em silêncio.
+      if (endsAt !== null && Date.now() - endsAt > LATE_WAKE_MS) {
+        const { restSessionId } = useRestTimerStore.getState();
+        if (restSessionId) void cancelRestEndNotification(restSessionId);
+        skip();
+        return;
+      }
       playEventSound('restDone');
       if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
         navigator.vibrate([180, 100, 180, 100, 320]);
@@ -71,6 +85,21 @@ export function RestTimerBar() {
     skip();
   };
 
+  // ±15s muda o fim do descanso: cancela o push do horário antigo e agenda
+  // no novo (adjust troca o restSessionId).
+  const handleAdjust = (delta: number) => {
+    const oldId = useRestTimerStore.getState().restSessionId;
+    adjust(delta);
+    const { restSessionId, endsAt, exerciseName } = useRestTimerStore.getState();
+    if (oldId) void cancelRestEndNotification(oldId);
+    if (restSessionId && endsAt !== null) {
+      const seconds = (endsAt - Date.now()) / 1000;
+      if (seconds > 0) {
+        void scheduleRestEndNotification(restSessionId, seconds, exerciseName);
+      }
+    }
+  };
+
   return (
     <div
       role="status"
@@ -89,7 +118,7 @@ export function RestTimerBar() {
       <div className="mx-auto flex max-w-md items-center gap-2 px-3 py-2.5">
         <button
           type="button"
-          onClick={() => adjust(-15)}
+          onClick={() => handleAdjust(-15)}
           disabled={isDone}
           className="h-10 min-w-[3.25rem] rounded-lg border border-line bg-surface-2 px-3 text-sm font-medium text-fg transition-colors hover:bg-surface-2/70 disabled:opacity-40"
         >
@@ -105,7 +134,7 @@ export function RestTimerBar() {
         </p>
         <button
           type="button"
-          onClick={() => adjust(15)}
+          onClick={() => handleAdjust(15)}
           disabled={isDone}
           className="h-10 min-w-[3.25rem] rounded-lg border border-line bg-surface-2 px-3 text-sm font-medium text-fg transition-colors hover:bg-surface-2/70 disabled:opacity-40"
         >

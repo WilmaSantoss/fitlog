@@ -1,4 +1,4 @@
-// Chamada pelo pg_cron a cada 15s. Autentica via bearer token compartilhado
+// Chamada pelo pg_cron (checa a cada 1s, só chama se houver algo vencido). Autentica via bearer token compartilhado
 // (não é chamada com JWT de usuário). Lê pending_notifications que já
 // venceram, envia via Web Push, atualiza status.
 //
@@ -37,13 +37,12 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   );
 
-  const { data: due, error: dueErr } = await admin
-    .from('pending_notifications')
-    .select('id, user_id, payload, attempts')
-    .eq('status', 'pending')
-    .lte('fire_at', new Date().toISOString())
-    .order('fire_at', { ascending: true })
-    .limit(BATCH_SIZE);
+  // Reserva as vencidas (status → 'processing') numa tacada só. O cron roda a
+  // cada 1s, então invocações podem se sobrepor; a reserva (FOR UPDATE SKIP
+  // LOCKED) garante que cada notificação só é enviada por uma delas.
+  const { data: due, error: dueErr } = await admin.rpc('claim_due_notifications', {
+    batch_size: BATCH_SIZE,
+  });
 
   if (dueErr) return json({ error: dueErr.message }, { status: 500 });
   if (!due || due.length === 0) return json({ ok: true, processed: 0 });

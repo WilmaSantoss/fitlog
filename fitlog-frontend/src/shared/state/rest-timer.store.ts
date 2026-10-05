@@ -42,6 +42,9 @@ export const useRestTimerStore = create<State>((set, get) => ({
       endsAt: nextEndsAt,
       secondsLeft: nextSecondsLeft,
       totalSeconds: Math.max(totalSeconds, nextSecondsLeft),
+      // Novo id: o push agendado é único por id (dedup_key), então pra
+      // reagendar no horário novo precisa de outro.
+      restSessionId: crypto.randomUUID(),
     });
   },
   tick: () => {
