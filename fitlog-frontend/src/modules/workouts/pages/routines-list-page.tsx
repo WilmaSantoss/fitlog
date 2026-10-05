@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Dumbbell, History, Play, Plus } from 'lucide-react';
+import { ArrowLeftRight, Dumbbell, History, Play, Plus } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { EmptyState } from '@/shared/ui/empty-state';
@@ -16,11 +16,12 @@ import type { Routine } from '../domain/workout.types';
 import { formatDate, formatRelative } from '@/shared/lib/date';
 import { formatClock } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/cn';
+import { ExerciseLibraryList } from '@/modules/exercises/components/exercise-library-list';
 
-type Tab = 'routines' | 'history';
+type Tab = 'routines' | 'history' | 'exercises';
 
 function isTab(v: string | null): v is Tab {
-  return v === 'routines' || v === 'history';
+  return v === 'routines' || v === 'history' || v === 'exercises';
 }
 
 export function RoutinesListPage() {
@@ -74,9 +75,16 @@ export function RoutinesListPage() {
           onClick={() => setTab('history')}
           label={t('workouts.tabHistory')}
         />
+        <TabButton
+          active={tab === 'exercises'}
+          onClick={() => setTab('exercises')}
+          label={t('exercises.title')}
+        />
       </div>
 
-      {tab === 'routines' ? (
+      {tab === 'exercises' ? (
+        <ExerciseLibraryList />
+      ) : tab === 'routines' ? (
         <RoutinesTab
           routines={routines}
           isLoading={routinesQ.isLoading}
@@ -325,6 +333,15 @@ function HistoryTab({ isLoading, sessions }: HistoryTabProps) {
                   <span className="text-fg-muted">
                     {stats.completedExercises}/{stats.totalExercises} exercícios
                   </span>
+                  {(() => {
+                    const replaced = s.exercises.filter((ex) => ex.replacedFrom).length;
+                    return replaced > 0 ? (
+                      <span className="inline-flex items-center gap-1 rounded-md bg-warmup/10 px-1.5 py-0.5 text-xs text-warmup">
+                        <ArrowLeftRight className="h-3 w-3" />
+                        {t('workouts.replacedCount', { count: replaced })}
+                      </span>
+                    ) : null;
+                  })()}
                 </p>
               </Card>
             </Link>

@@ -13,8 +13,11 @@ import {
   type RoutineFormParsed,
   type RoutineFormValues,
 } from '../domain/workout.schema';
-import type { Routine } from '../domain/workout.types';
-import type { RoutineInput } from '../services/routine.service';
+import { SET_TYPES, type Routine } from '../domain/workout.types';
+import {
+  routineRests,
+  type RoutineInput,
+} from '../services/routine.service';
 import { ExerciseBlock } from './exercise-block';
 import { newId } from '@/shared/lib/uuid';
 
@@ -37,17 +40,18 @@ function buildDefaults(initial?: Routine): RoutineFormValues {
     return {
       name: '',
       notes: '',
+      rests: emptyRests(),
       exercises: [
         {
           id: newId(),
           name: '',
+          libraryId: null,
           notes: '',
-          rests: emptyRests(),
           videoUrl: null,
           sets: [
             {
               id: newId(),
-              type: 'WS',
+              type: 'WU',
               reps: '',
               weightKg: '',
             },
@@ -56,18 +60,20 @@ function buildDefaults(initial?: Routine): RoutineFormValues {
       ],
     };
   }
+  const rests = routineRests(initial);
   return {
     name: initial.name,
     notes: initial.notes ?? '',
+    rests: {
+      WU: formatRestInput(rests.WU),
+      FS: formatRestInput(rests.FS),
+      WS: formatRestInput(rests.WS),
+    },
     exercises: initial.exercises.map((ex) => ({
       id: ex.id,
       name: ex.name,
+      libraryId: ex.libraryId,
       notes: ex.notes ?? '',
-      rests: {
-        WU: formatRestInput(ex.rests.WU),
-        FS: formatRestInput(ex.rests.FS),
-        WS: formatRestInput(ex.rests.WS),
-      },
       videoUrl: ex.videoUrl ?? null,
       sets: ex.sets.map((s) => ({
         id: s.id,
@@ -103,8 +109,9 @@ export function RoutineForm({ initial, onSubmit, submitting }: Props) {
       exercises: parsed.exercises.map((ex) => ({
         id: ex.id,
         name: ex.name,
+        libraryId: ex.libraryId,
         notes: ex.notes,
-        rests: ex.rests,
+        rests: parsed.rests,
         videoUrl: ex.videoUrl,
         sets: ex.sets.map((s) => ({
           id: s.id,
@@ -141,6 +148,34 @@ export function RoutineForm({ initial, onSubmit, submitting }: Props) {
         <Textarea id="notes" rows={2} {...register('notes')} />
       </FormField>
 
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium text-fg-muted">
+          {t('workouts.restsByTypeLabel')}
+        </span>
+        <div className="grid grid-cols-3 gap-2">
+          {SET_TYPES.map((type) => (
+            <FormField
+              key={type}
+              label={type}
+              htmlFor={`rests.${type}`}
+              error={errors.rests?.[type]?.message}
+            >
+              <Input
+                id={`rests.${type}`}
+                type="text"
+                inputMode="text"
+                placeholder="—"
+                invalid={!!errors.rests?.[type]}
+                {...register(`rests.${type}` as const)}
+              />
+            </FormField>
+          ))}
+        </div>
+        <span className="text-xs text-fg-subtle">
+          {t('workouts.restsByTypeHint')}
+        </span>
+      </div>
+
       <ul className="flex flex-col gap-3">
         {exerciseArray.fields.map((field, index) => (
           <li key={field.id}>
@@ -168,13 +203,13 @@ export function RoutineForm({ initial, onSubmit, submitting }: Props) {
           exerciseArray.append({
             id: newId(),
             name: '',
+            libraryId: null,
             notes: '',
-            rests: emptyRests(),
             videoUrl: null,
             sets: [
               {
                 id: newId(),
-                type: 'WS',
+                type: 'WU',
                 reps: '',
                 weightKg: '',
               },

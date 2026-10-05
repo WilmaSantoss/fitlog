@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { sessionService } from '../services/session.service';
+import {
+  sessionService,
+  type ExerciseReplacement,
+} from '../services/session.service';
 import type { SessionSet } from '../domain/workout.types';
 
 const KEYS = {
@@ -166,7 +169,9 @@ export function useUpdateSessionSet() {
       });
       return { previous };
     },
-    onError: (_err, vars, ctx) => {
+    onError: (err, vars, ctx) => {
+      // Sem isso a série "desmarca" sozinha sem pista nenhuma do porquê.
+      console.error('[session] falha ao salvar série:', err);
       if (ctx?.previous) qc.setQueryData(KEYS.detail(vars.sessionId), ctx.previous);
     },
     onSettled: (_d, _err, vars) => {
@@ -184,6 +189,29 @@ export function useUpdateSessionSet() {
         void qc.invalidateQueries({ queryKey: ['sessions', 'exerciseEvolution'] });
         void qc.invalidateQueries({ queryKey: ['sessions', 'previous'] });
       }
+    },
+  });
+}
+
+export function useReplaceSessionExercise() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: {
+      readonly sessionId: string;
+      readonly exerciseId: string;
+      readonly replacement: ExerciseReplacement;
+    }) =>
+      serializePerSession(vars.sessionId, () =>
+        sessionService.replaceExercise(
+          vars.sessionId,
+          vars.exerciseId,
+          vars.replacement,
+        ),
+      ),
+    onSuccess: (_d, vars) => {
+      void qc.invalidateQueries({ queryKey: KEYS.detail(vars.sessionId) });
+      // "Anterior" é por nome de exercício — muda com a troca.
+      void qc.invalidateQueries({ queryKey: ['sessions', 'previous'] });
     },
   });
 }

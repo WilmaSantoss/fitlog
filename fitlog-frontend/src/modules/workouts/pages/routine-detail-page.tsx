@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Copy, Pencil, Play, Trash2 } from 'lucide-react';
+import { Copy, Pencil, Play, Timer, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/shared/ui/page-header';
 import { IconButton } from '@/shared/ui/icon-button';
 import { Button } from '@/shared/ui/button';
@@ -14,6 +14,8 @@ import {
 } from '../hooks/use-routines';
 import { useStartSessionFromRoutine } from '../hooks/use-sessions';
 import { SetTypePill } from '../components/set-type-pill';
+import { routineRests } from '../services/routine.service';
+import { SET_TYPES } from '../domain/workout.types';
 import { formatKg, formatDuration } from '@/shared/lib/format';
 
 export function RoutineDetailPage() {
@@ -106,6 +108,19 @@ export function RoutineDetailPage() {
         </Card>
       )}
 
+      {(() => {
+        const rests = routineRests(routine);
+        const parts = SET_TYPES.filter((type) => rests[type] !== null).map(
+          (type) => `${type} ${formatDuration(rests[type] as number)}`,
+        );
+        return parts.length > 0 ? (
+          <p className="mb-3 inline-flex items-center gap-1.5 text-xs text-accent">
+            <Timer className="h-3.5 w-3.5" />
+            {t('workouts.rest')}: {parts.join(' · ')}
+          </p>
+        ) : null;
+      })()}
+
       <Button
         fullWidth
         size="lg"
@@ -129,20 +144,6 @@ export function RoutineDetailPage() {
                   {exercise.notes}
                 </p>
               )}
-              {(() => {
-                const parts: string[] = [];
-                if (exercise.rests.WU !== null)
-                  parts.push(`WU ${formatDuration(exercise.rests.WU)}`);
-                if (exercise.rests.FS !== null)
-                  parts.push(`FS ${formatDuration(exercise.rests.FS)}`);
-                if (exercise.rests.WS !== null)
-                  parts.push(`WS ${formatDuration(exercise.rests.WS)}`);
-                return parts.length > 0 ? (
-                  <p className="mt-1 text-xs text-accent">
-                    {t('workouts.rest')}: {parts.join(' · ')}
-                  </p>
-                ) : null;
-              })()}
               <div className="mt-3 grid grid-cols-[3.5rem_1fr_1fr] gap-2 text-xs uppercase tracking-wide text-fg-subtle">
                 <span>{t('workouts.set')}</span>
                 <span>{t('workouts.weight')}</span>

@@ -9,6 +9,7 @@ import {
   type IRoutineRepository,
 } from '../repository/routine.repository';
 import type {
+  ReplacedExercise,
   Routine,
   SessionExercise,
   SessionSet,
@@ -53,6 +54,11 @@ export type ExerciseEvolutionPoint = {
 
 export type RoutineExerciseAverages = ReadonlyMap<string, number>;
 
+export type ExerciseReplacement = {
+  readonly name: string;
+  readonly libraryId: string | null;
+};
+
 export interface ISessionService {
   startFromRoutine(routineId: string): Promise<WorkoutSession | undefined>;
   get(id: string): Promise<WorkoutSession | undefined>;
@@ -65,6 +71,11 @@ export interface ISessionService {
     patch: Partial<Pick<SessionSet, 'actualReps' | 'actualWeightKg' | 'completed'>>,
   ): Promise<void>;
   updateNotes(sessionId: string, notes: string | null): Promise<void>;
+  replaceExercise(
+    sessionId: string,
+    exerciseId: string,
+    replacement: ExerciseReplacement,
+  ): Promise<void>;
   updateFinishedAt(sessionId: string, finishedAt: string): Promise<void>;
   finish(sessionId: string): Promise<void>;
   syncRoutineWeights(sessionId: string): Promise<void>;
@@ -111,6 +122,8 @@ function sessionFromRoutine(
     return {
       id: newId(),
       name: e.name,
+      libraryId: e.libraryId,
+      replacedFrom: null,
       notes: e.notes,
       rests: e.rests,
       videoUrl: e.videoUrl,
@@ -201,6 +214,54 @@ class SessionService implements ISessionService {
       exercises,
       updatedAt: now,
     });
+  }
+
+  // Troca o exercício só nesta sessão — a rotina não é tocada (e o
+  // saveLastWeightsToRoutine casa por nome, então o peso do substituto não
+  // vai parar no exercício original). Séries mantêm tipo e reps planejadas;
+  // o que foi feito é zerado e o peso vem do histórico do exercício novo.
+  async replaceExercise(
+    sessionId: string,
+    exerciseId: string,
+    replacement: ExerciseReplacement,
+  ): Promise<void> {
+    const session = await this.sessions.getById(sessionId);
+    if (!session) return;
+    const finished = await this.sessions.listFinished();
+    const last =
+      lastWeightsByExercise(finished).get(replacement.name.trim().toLowerCase()) ?? [];
+    const now = nowUtcIso();
+    const exercises = session.exercises.map((ex) => {
+      if (ex.id !== exerciseId) return ex;
+      // Original é sempre o da rotina, mesmo se trocar duas vezes. Voltar pro
+      // original desfaz a marcação de substituído.
+      const original: ReplacedExercise = ex.replacedFrom ?? {
+        name: ex.name,
+        libraryId: ex.libraryId,
+      };
+      const backToOriginal =
+        original.name.trim().toLowerCase() === replacement.name.trim().toLowerCase();
+      return {
+        ...ex,
+        name: replacement.name,
+        libraryId: replacement.libraryId,
+        // Vídeo próprio era do exercício original.
+        videoUrl: backToOriginal ? ex.videoUrl : null,
+        replacedFrom: backToOriginal ? null : original,
+        sets: ex.sets.map((s, idx) => {
+          const weightKg = last[idx] ?? null;
+          return {
+            ...s,
+            plannedWeightKg: weightKg,
+            actualWeightKg: weightKg,
+            actualReps: null,
+            completed: false,
+          };
+        }),
+        completedAt: null,
+      };
+    });
+    await this.sessions.update(sessionId, { exercises, updatedAt: now });
   }
 
   async updateNotes(sessionId: string, notes: string | null): Promise<void> {

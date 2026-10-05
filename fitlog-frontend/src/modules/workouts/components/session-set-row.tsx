@@ -7,7 +7,10 @@ import type { RestByType, SessionSet } from '../domain/workout.types';
 import type { ExercisePr, PreviousSet } from '../services/session.service';
 import { useCelebrationStore } from '@/shared/state/celebration.store';
 import { useRestTimerStore } from '@/shared/state/rest-timer.store';
-import { scheduleRestEndNotification } from '@/shared/lib/push';
+import {
+  cancelRestEndNotification,
+  scheduleRestEndNotification,
+} from '@/shared/lib/push';
 
 type Props = {
   set: SessionSet;
@@ -82,7 +85,7 @@ export function SessionSetRow({
     <div
       className={cn(
         'grid grid-cols-[2.25rem_minmax(0,5rem)_1fr_1fr_2.25rem] items-center gap-2 rounded-lg px-2 py-2 transition-colors',
-        set.completed && 'ring-1 ring-inset ring-success/50',
+        set.completed && 'bg-done/10 ring-1 ring-inset ring-done/40',
       )}
     >
       <SetTypePill type={set.type} />
@@ -133,6 +136,10 @@ export function SessionSetRow({
           const restForSet =
             rests[set.type] ?? rests.WS ?? rests.FS ?? rests.WU ?? null;
           if (willComplete && restForSet && restForSet > 0) {
+            // Descanso anterior ainda rodando: o push dele dispararia no
+            // horário antigo, no meio do descanso novo.
+            const prevRestId = useRestTimerStore.getState().restSessionId;
+            if (prevRestId) void cancelRestEndNotification(prevRestId);
             startRest(restForSet, exerciseName);
             const sessionId = useRestTimerStore.getState().restSessionId;
             if (sessionId) {
@@ -174,11 +181,11 @@ export function SessionSetRow({
         className={cn(
           'inline-flex h-8 w-8 items-center justify-center rounded-md border transition-all active:scale-95',
           set.completed
-            ? 'border-success/70 bg-success/15 text-success'
+            ? 'border-done bg-done text-app'
             : 'border-line bg-surface-2 text-fg-subtle hover:border-accent/60 hover:bg-accent/10 hover:text-accent',
         )}
       >
-        <Check className="h-4 w-4" />
+        <Check className="h-4 w-4" strokeWidth={set.completed ? 3 : 2} />
       </button>
     </div>
   );

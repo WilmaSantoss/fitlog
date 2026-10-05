@@ -15,6 +15,7 @@ import { SessionDetailPage } from '@/modules/workouts/pages/session-detail-page'
 import { ProfilePage } from '@/modules/profile/pages/profile-page';
 import { ProgressPage } from '@/modules/progress/pages/progress-page';
 import { SettingsPage } from '@/modules/settings/pages/settings-page';
+import { ExerciseDetailPage } from '@/modules/exercises/pages/exercise-detail-page';
 
 const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -34,6 +35,8 @@ const router = createBrowserRouter([
           { path: 'treino/:routineId', element: <RoutineDetailPage /> },
           { path: 'treino/sessao/:sessionId', element: <SessionPage /> },
           { path: 'treino/historico/:sessionId', element: <SessionDetailPage /> },
+
+          { path: 'exercicios/:exerciseId', element: <ExerciseDetailPage /> },
 
           { path: 'medidas', element: <MeasurementsListPage /> },
           { path: 'medidas/nova', element: <MeasurementFormPage /> },

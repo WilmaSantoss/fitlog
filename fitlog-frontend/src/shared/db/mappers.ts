@@ -109,11 +109,22 @@ type StoredExerciseCommon = {
   restSeconds?: number | null;
 };
 
-type StoredRoutineExercise = Omit<RoutineExercise, 'rests' | 'sets'> &
-  StoredExerciseCommon & { sets: readonly StoredPlannedSet[] };
+// libraryId opcional: exercícios salvos antes da biblioteca não têm o campo.
+type StoredRoutineExercise = Omit<RoutineExercise, 'rests' | 'sets' | 'libraryId'> &
+  StoredExerciseCommon & {
+    libraryId?: string | null;
+    sets: readonly StoredPlannedSet[];
+  };
 
-type StoredSessionExercise = Omit<SessionExercise, 'rests' | 'sets'> &
-  StoredExerciseCommon & { sets: readonly StoredSessionSet[] };
+type StoredSessionExercise = Omit<
+  SessionExercise,
+  'rests' | 'sets' | 'libraryId' | 'replacedFrom'
+> &
+  StoredExerciseCommon & {
+    libraryId?: string | null;
+    replacedFrom?: SessionExercise['replacedFrom'];
+    sets: readonly StoredSessionSet[];
+  };
 
 function migrateSetType(t: LegacySetType | string | null | undefined): SetType {
   if (t === 'WU' || t === 'FS' || t === 'WS') return t;
@@ -137,6 +148,7 @@ function migrateRoutineExercise(e: StoredRoutineExercise): RoutineExercise {
   return {
     id: e.id,
     name: e.name,
+    libraryId: e.libraryId ?? null,
     notes: e.notes,
     rests: migrateRests(e.rests, e.restSeconds),
     videoUrl: e.videoUrl ?? null,
@@ -153,6 +165,8 @@ function migrateSessionExercise(e: StoredSessionExercise): SessionExercise {
   return {
     id: e.id,
     name: e.name,
+    libraryId: e.libraryId ?? null,
+    replacedFrom: e.replacedFrom ?? null,
     notes: e.notes,
     rests: migrateRests(e.rests, e.restSeconds),
     videoUrl: e.videoUrl ?? null,

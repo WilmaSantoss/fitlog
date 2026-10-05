@@ -1,5 +1,5 @@
 import {
-  Controller,
+  useController,
   useFieldArray,
   useWatch,
   type Control,
@@ -7,7 +7,7 @@ import {
   type FieldErrors,
 } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, X } from 'lucide-react';
 import { Card } from '@/shared/ui/card';
 import { Input } from '@/shared/ui/input';
 import { Select } from '@/shared/ui/select';
@@ -20,7 +20,7 @@ import type {
   RoutineFormValues,
 } from '../domain/workout.schema';
 import { newId } from '@/shared/lib/uuid';
-import { VideoUpload } from './video-upload';
+import { ExercisePicker } from '@/modules/exercises/components/exercise-picker';
 
 type Props = {
   index: number;
@@ -43,97 +43,67 @@ export function ExerciseBlock({
     control,
     name: `exercises.${index}.sets` as const,
   });
-
-  const exerciseId = useWatch({
+  // Valores atuais das séries (fields só reflete o array, não o select de
+  // tipo que a usuária mudou). Série nova repete o tipo da última; sem
+  // nenhuma, começa em WU.
+  const currentSets = useWatch({
     control,
-    name: `exercises.${index}.id` as const,
+    name: `exercises.${index}.sets` as const,
   });
+  const nextSetType: SetType = currentSets?.at(-1)?.type ?? 'WU';
 
   const exerciseErrors = errors.exercises?.[index];
-  const restsErrors = exerciseErrors?.rests;
+
+  // Nome e vínculo com a biblioteca andam juntos: escolher da lista preenche
+  // os dois; digitar livre zera o vínculo.
+  const { field: nameField } = useController({
+    control,
+    name: `exercises.${index}.name` as const,
+  });
+  const { field: libraryIdField } = useController({
+    control,
+    name: `exercises.${index}.libraryId` as const,
+  });
 
   return (
     <Card className="flex flex-col gap-3">
-      <div className="flex items-start gap-2">
-        <div className="flex-1">
-          <FormField
-            label={t('workouts.exerciseName')}
+      {/* Lixeira no topo do card, alinhada ao rótulo — remove o exercício
+          inteiro, não só o nome. */}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <label
             htmlFor={`exercises.${index}.name`}
-            error={exerciseErrors?.name?.message}
+            className="text-sm font-medium text-fg-muted"
           >
-            <Input
-              id={`exercises.${index}.name`}
-              placeholder="Ex.: Supino reto"
-              invalid={!!exerciseErrors?.name}
-              {...register(`exercises.${index}.name` as const)}
-            />
-          </FormField>
-        </div>
-        <div className="pt-7">
+            {t('workouts.exerciseName')}
+          </label>
           <IconButton
             label={t('workouts.removeExercise')}
             tone="danger"
+            className="-mr-1.5 h-8 w-8"
             onClick={onRemove}
           >
-            <Trash2 className="h-5 w-5" />
+            <Trash2 className="h-4 w-4" />
           </IconButton>
         </div>
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium text-fg-muted">
-          {t('workouts.restsByTypeLabel')}
-        </span>
-        <div className="grid grid-cols-3 gap-2">
-          <FormField
-            label="WU"
-            htmlFor={`exercises.${index}.rests.WU`}
-            optional
-            error={restsErrors?.WU?.message}
-          >
-            <Input
-              id={`exercises.${index}.rests.WU`}
-              type="text"
-              inputMode="text"
-              placeholder="—"
-              invalid={!!restsErrors?.WU}
-              {...register(`exercises.${index}.rests.WU` as const)}
-            />
-          </FormField>
-          <FormField
-            label="FS"
-            htmlFor={`exercises.${index}.rests.FS`}
-            optional
-            error={restsErrors?.FS?.message}
-          >
-            <Input
-              id={`exercises.${index}.rests.FS`}
-              type="text"
-              inputMode="text"
-              placeholder="—"
-              invalid={!!restsErrors?.FS}
-              {...register(`exercises.${index}.rests.FS` as const)}
-            />
-          </FormField>
-          <FormField
-            label="WS"
-            htmlFor={`exercises.${index}.rests.WS`}
-            optional
-            error={restsErrors?.WS?.message}
-          >
-            <Input
-              id={`exercises.${index}.rests.WS`}
-              type="text"
-              inputMode="text"
-              placeholder="—"
-              invalid={!!restsErrors?.WS}
-              {...register(`exercises.${index}.rests.WS` as const)}
-            />
-          </FormField>
-        </div>
-        <span className="text-xs text-fg-subtle">
-          {t('workouts.restsByTypeHint')}
-        </span>
+        <ExercisePicker
+          id={`exercises.${index}.name`}
+          name={nameField.value}
+          libraryId={libraryIdField.value ?? null}
+          invalid={!!exerciseErrors?.name}
+          inputRef={nameField.ref}
+          onSelect={(exercise) => {
+            nameField.onChange(exercise.name);
+            libraryIdField.onChange(exercise.id);
+          }}
+          onFreeName={(name) => {
+            nameField.onChange(name);
+            libraryIdField.onChange(null);
+          }}
+        />
+        {exerciseErrors?.name?.message && (
+          <p className="text-xs text-failure">{exerciseErrors.name.message}</p>
+        )}
       </div>
 
       <FormField
@@ -148,24 +118,6 @@ export function ExerciseBlock({
           {...register(`exercises.${index}.notes` as const)}
         />
       </FormField>
-
-      <div className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium text-fg-muted">
-          Vídeo do exercício{' '}
-          <span className="text-fg-subtle">({t('common.optional')})</span>
-        </span>
-        <Controller
-          control={control}
-          name={`exercises.${index}.videoUrl` as const}
-          render={({ field }) => (
-            <VideoUpload
-              exerciseId={exerciseId}
-              videoUrl={field.value ?? null}
-              onChange={(url) => field.onChange(url)}
-            />
-          )}
-        />
-      </div>
 
       <div>
         <p className="mb-1 text-[11px] text-fg-subtle">
@@ -210,7 +162,7 @@ export function ExerciseBlock({
                 <Input
                   type="text"
                   inputMode="text"
-                  placeholder="8, 5-9 ou 4+4+4"
+                  placeholder="ex: 5-9"
                   invalid={!!setErrors?.reps}
                   {...register(
                     `exercises.${index}.sets.${setIndex}.reps` as const,
@@ -218,11 +170,10 @@ export function ExerciseBlock({
                 />
                 <IconButton
                   label={t('workouts.removeSet')}
-                  tone="danger"
-                  className="h-9 w-9"
+                  className="h-9 w-9 hover:bg-failure/10 hover:text-failure"
                   onClick={() => remove(setIndex)}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <X className="h-4 w-4" />
                 </IconButton>
               </li>
             );
@@ -242,7 +193,7 @@ export function ExerciseBlock({
           onClick={() =>
             append({
               id: newId(),
-              type: 'WS',
+              type: nextSetType,
               reps: '',
               weightKg: '',
             })

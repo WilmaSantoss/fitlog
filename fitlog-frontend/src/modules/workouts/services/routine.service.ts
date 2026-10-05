@@ -22,6 +22,7 @@ export type PlannedSetInput = {
 export type RoutineExerciseInput = {
   readonly id?: string;
   readonly name: string;
+  readonly libraryId: string | null;
   readonly notes: string | null;
   readonly rests: RestByType;
   readonly videoUrl: string | null;
@@ -43,6 +44,16 @@ export interface IRoutineService {
   remove(id: string): Promise<void>;
 }
 
+// O descanso por tipo é do treino, mas fica gravado em cada exercício (o
+// form copia o mesmo valor pra todos) — assim a sessão segue lendo de
+// exercise.rests sem migration. Rotinas antigas podem ter valores diferentes
+// por exercício: vale o primeiro preenchido de cada tipo.
+export function routineRests(routine: Routine): RestByType {
+  const pick = (type: SetType) =>
+    routine.exercises.find((e) => e.rests[type] !== null)?.rests[type] ?? null;
+  return { WU: pick('WU'), FS: pick('FS'), WS: pick('WS') };
+}
+
 function materializeSet(s: PlannedSetInput): PlannedSet {
   return {
     id: s.id ?? newId(),
@@ -56,6 +67,7 @@ function materializeExercise(e: RoutineExerciseInput): RoutineExercise {
   return {
     id: e.id ?? newId(),
     name: e.name,
+    libraryId: e.libraryId,
     notes: e.notes,
     rests: e.rests,
     videoUrl: e.videoUrl,
@@ -114,6 +126,7 @@ class RoutineService implements IRoutineService {
       notes: source.notes,
       exercises: source.exercises.map((e) => ({
         name: e.name,
+        libraryId: e.libraryId,
         notes: e.notes,
         rests: e.rests,
         videoUrl: e.videoUrl,

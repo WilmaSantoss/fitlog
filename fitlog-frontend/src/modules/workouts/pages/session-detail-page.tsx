@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Check, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeftRight, Check, Pencil, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/shared/ui/page-header';
-import { IconButton } from '@/shared/ui/icon-button';
+import { OverflowMenu } from '@/shared/ui/overflow-menu';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
@@ -71,7 +71,7 @@ function EditableSetRow({ set, onChange }: EditableSetRowProps) {
     <div
       className={cn(
         'grid grid-cols-[2.25rem_1fr_1fr_2.25rem] items-center gap-2 rounded-lg px-2 py-2 transition-colors',
-        set.completed && 'ring-1 ring-inset ring-success/50',
+        set.completed && 'bg-done/10 ring-1 ring-inset ring-done/40',
       )}
     >
       <SetTypePill type={set.type} />
@@ -113,7 +113,7 @@ function EditableSetRow({ set, onChange }: EditableSetRowProps) {
         className={cn(
           'inline-flex h-8 w-8 items-center justify-center rounded-md border transition-all active:scale-95',
           set.completed
-            ? 'border-success/70 bg-success/15 text-success'
+            ? 'border-done bg-done text-app'
             : 'border-line bg-surface-2 text-fg-subtle hover:border-accent/60 hover:bg-accent/10 hover:text-accent',
         )}
       >
@@ -223,13 +223,17 @@ export function SessionDetailPage() {
                 {t('common.edit')}
               </Button>
             )}
-            <IconButton
-              label={t('common.delete')}
-              tone="danger"
-              onClick={() => setConfirmDeleteOpen(true)}
-            >
-              <Trash2 className="h-5 w-5" />
-            </IconButton>
+            <OverflowMenu
+              label={t('common.moreActions')}
+              items={[
+                {
+                  label: t('workouts.deleteSession'),
+                  icon: <Trash2 className="h-4 w-4" />,
+                  tone: 'danger',
+                  onSelect: () => setConfirmDeleteOpen(true),
+                },
+              ]}
+            />
           </>
         }
       />
@@ -306,6 +310,14 @@ export function SessionDetailPage() {
               <h2 className="text-base font-semibold text-accent">
                 {exercise.name}
               </h2>
+              {exercise.replacedFrom && (
+                <p className="mt-1 inline-flex items-center gap-1.5 rounded-md bg-warmup/10 px-2 py-0.5 text-xs text-warmup">
+                  <ArrowLeftRight className="h-3 w-3" />
+                  {t('workouts.replacedFrom', {
+                    name: exercise.replacedFrom.name,
+                  })}
+                </p>
+              )}
               {editMode ? (
                 <>
                   <div className="mt-3 grid grid-cols-[2.25rem_1fr_1fr_2.25rem] gap-2 px-2 text-xs uppercase tracking-wide text-fg-subtle">
@@ -357,7 +369,7 @@ export function SessionDetailPage() {
                         <span
                           className={
                             set.completed
-                              ? 'text-success text-base'
+                              ? 'text-done text-base'
                               : 'text-fg-subtle text-base'
                           }
                         >

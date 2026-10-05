@@ -1,16 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, PlayCircle, Timer, Trash2 } from 'lucide-react';
+import {
+  ArrowLeftRight,
+  ChevronLeft,
+  PlayCircle,
+  Timer,
+  Trash2,
+} from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { Textarea } from '@/shared/ui/textarea';
 import { IconButton } from '@/shared/ui/icon-button';
+import { OverflowMenu } from '@/shared/ui/overflow-menu';
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
 import {
   useDeleteSession,
   useExerciseSummariesQuery,
   useFinishSession,
+  useReplaceSessionExercise,
   usePreviousByExerciseQuery,
   useRoutineExerciseAveragesQuery,
   useSessionQuery,
@@ -18,6 +26,11 @@ import {
   useUpdateSessionSet,
 } from '../hooks/use-sessions';
 import { SessionSetRow } from '../components/session-set-row';
+import { ReplaceExerciseDialog } from '../components/replace-exercise-dialog';
+import { LibraryExerciseMedia } from '@/modules/exercises/components/library-exercise-media';
+import { LibraryExerciseThumb } from '@/modules/exercises/components/library-exercise-thumb';
+import { Switch } from '@/shared/ui/switch';
+import { useSessionViewStore } from '@/shared/state/session-view.store';
 import { sessionService } from '../services/session.service';
 import { formatClock, formatDuration, formatNumber } from '@/shared/lib/format';
 
@@ -48,6 +61,10 @@ export function SessionPage() {
   const deleteMutation = useDeleteSession();
 
   const [notesDraft, setNotesDraft] = useState('');
+  const showAnimations = useSessionViewStore((s) => s.showAnimations);
+  const [replacingId, setReplacingId] = useState<string | null>(null);
+  const replaceMutation = useReplaceSessionExercise();
+  const setShowAnimations = useSessionViewStore((s) => s.setShowAnimations);
   const [discardOpen, setDiscardOpen] = useState(false);
   const [finishOpen, setFinishOpen] = useState(false);
   const [tick, setTick] = useState(0);
@@ -130,16 +147,20 @@ export function SessionPage() {
             {session.routineName}
           </h1>
           <div className="flex items-center gap-2">
-            <IconButton
-              label={t('workouts.discard')}
-              tone="danger"
-              onClick={() => setDiscardOpen(true)}
-            >
-              <Trash2 className="h-5 w-5" />
-            </IconButton>
             <Button size="sm" onClick={() => setFinishOpen(true)}>
               {t('workouts.finish')}
             </Button>
+            <OverflowMenu
+              label={t('common.moreActions')}
+              items={[
+                {
+                  label: t('workouts.discard'),
+                  icon: <Trash2 className="h-4 w-4" />,
+                  tone: 'danger',
+                  onSelect: () => setDiscardOpen(true),
+                },
+              ]}
+            />
           </div>
         </div>
 
@@ -181,6 +202,15 @@ export function SessionPage() {
         )}
       </div>
 
+      {session.exercises.some((ex) => ex.libraryId || ex.videoUrl) && (
+        <Switch
+          label={t('workouts.showAnimations')}
+          checked={showAnimations}
+          onChange={setShowAnimations}
+          className="justify-end"
+        />
+      )}
+
       <ul className="flex flex-col gap-3">
         {session.exercises.map((exercise, exIdx) => {
           const nameKey = exercise.name.trim().toLowerCase();
@@ -197,7 +227,7 @@ export function SessionPage() {
           return (
             <li key={exercise.id}>
               <Card className="p-0 overflow-hidden">
-                {exercise.videoUrl ? (
+                {!showAnimations ? null : exercise.videoUrl ? (
                   <video
                     key={exercise.videoUrl}
                     src={exercise.videoUrl}
@@ -208,28 +238,58 @@ export function SessionPage() {
                     playsInline
                     preload="metadata"
                   />
+                ) : exercise.libraryId ? (
+                  <LibraryExerciseMedia
+                    libraryId={exercise.libraryId}
+                    className="block aspect-[2/1] w-full border-b border-line/40"
+                    fallback={<NoVideoPlaceholder />}
+                  />
                 ) : (
-                  <div
-                    className="relative flex aspect-[16/6] items-center justify-center border-b border-line/40 text-fg-subtle"
-                    style={{
-                      backgroundImage:
-                        'repeating-linear-gradient(-45deg, transparent 0 10px, rgba(255,255,255,0.02) 10px 20px)',
-                      backgroundColor: 'var(--color-surface-2)',
-                    }}
-                    aria-hidden
-                  >
-                    <div className="flex items-center gap-2 text-xs">
-                      <PlayCircle className="h-4 w-4" />
-                      <span className="lowercase">sem vídeo</span>
-                    </div>
-                  </div>
+                  <NoVideoPlaceholder />
                 )}
                 <div className="p-5">
-                <div className="flex items-baseline justify-between gap-3">
-                  <h2 className="text-lg font-semibold text-accent">
-                    {exercise.name}
-                  </h2>
-                  <div className="flex items-center gap-3 text-right">
+                <div className="flex gap-3">
+                  {!showAnimations &&
+                    (exercise.libraryId ? (
+                      <LibraryExerciseThumb libraryId={exercise.libraryId} />
+                    ) : exercise.videoUrl ? (
+                      <video
+                        key={exercise.videoUrl}
+                        src={exercise.videoUrl}
+                        className="aspect-[3/2] w-24 shrink-0 rounded-lg object-cover"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        preload="metadata"
+                      />
+                    ) : null)}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start gap-2">
+                      <h2 className="min-w-0 flex-1 text-lg font-semibold leading-snug text-accent">
+                        {exercise.name}
+                      </h2>
+                      {durationSec !== null && (
+                        <span className="mt-1 font-mono text-sm font-semibold text-fg">
+                          {formatClock(durationSec)}
+                        </span>
+                      )}
+                      <IconButton
+                        label={t('workouts.replaceExercise')}
+                        className="-mr-2 -mt-0.5 h-8 w-8 shrink-0"
+                        onClick={() => setReplacingId(exercise.id)}
+                      >
+                        <ArrowLeftRight className="h-4 w-4" />
+                      </IconButton>
+                    </div>
+                    {exercise.replacedFrom && (
+                      <p className="mt-1 inline-flex items-center gap-1.5 rounded-md bg-warmup/10 px-2 py-0.5 text-xs text-warmup">
+                        <ArrowLeftRight className="h-3 w-3" />
+                        {t('workouts.replacedFrom', {
+                          name: exercise.replacedFrom.name,
+                        })}
+                      </p>
+                    )}
                     {(() => {
                       const parts: string[] = [];
                       if (exercise.rests.WU !== null)
@@ -239,31 +299,26 @@ export function SessionPage() {
                       if (exercise.rests.WS !== null)
                         parts.push(`WS ${formatDuration(exercise.rests.WS)}`);
                       return parts.length > 0 ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-fg-muted">
+                        <p className="mt-1 flex items-center gap-1 text-xs text-fg-muted">
                           <Timer className="h-3.5 w-3.5" />
                           {parts.join(' · ')}
-                        </span>
+                        </p>
                       ) : null;
                     })()}
-                    {durationSec !== null && (
-                      <span className="font-mono text-sm font-semibold text-fg">
-                        {formatClock(durationSec)}
-                      </span>
+                    {averageSec !== null && (
+                      <p className="mt-1 font-mono text-[11px] text-fg-muted">
+                        {t('workouts.exerciseAvg', {
+                          time: formatClock(averageSec),
+                        })}
+                      </p>
+                    )}
+                    {exercise.notes && (
+                      <p className="mt-2 whitespace-pre-wrap text-sm text-fg-muted">
+                        {exercise.notes}
+                      </p>
                     )}
                   </div>
                 </div>
-                {averageSec !== null && (
-                  <p className="mt-1 font-mono text-[11px] text-fg-muted">
-                    {t('workouts.exerciseAvg', {
-                      time: formatClock(averageSec),
-                    })}
-                  </p>
-                )}
-                {exercise.notes && (
-                  <p className="mt-2 whitespace-pre-wrap text-sm text-fg-muted">
-                    {exercise.notes}
-                  </p>
-                )}
                 <div className="mt-4 grid grid-cols-[2.25rem_minmax(0,5rem)_1fr_1fr_2.25rem] gap-2 px-2 text-xs uppercase tracking-wide text-fg-subtle">
                   <span>{t('workouts.set')}</span>
                   <span>{t('workouts.previous')}</span>
@@ -318,6 +373,22 @@ export function SessionPage() {
         />
       </Card>
 
+      <ReplaceExerciseDialog
+        exercise={
+          session.exercises.find((ex) => ex.id === replacingId) ?? null
+        }
+        submitting={replaceMutation.isPending}
+        onCancel={() => setReplacingId(null)}
+        onConfirm={async (replacement) => {
+          if (!replacingId) return;
+          await replaceMutation.mutateAsync({
+            sessionId: session.id,
+            exerciseId: replacingId,
+            replacement,
+          });
+          setReplacingId(null);
+        }}
+      />
       <ConfirmDialog
         open={discardOpen}
         title={t('workouts.discard')}
@@ -335,6 +406,25 @@ export function SessionPage() {
         onConfirm={handleFinish}
         onCancel={() => setFinishOpen(false)}
       />
+    </div>
+  );
+}
+
+function NoVideoPlaceholder() {
+  return (
+    <div
+      className="relative flex aspect-[16/6] items-center justify-center border-b border-line/40 text-fg-subtle"
+      style={{
+        backgroundImage:
+          'repeating-linear-gradient(-45deg, transparent 0 10px, rgba(255,255,255,0.02) 10px 20px)',
+        backgroundColor: 'var(--color-surface-2)',
+      }}
+      aria-hidden
+    >
+      <div className="flex items-center gap-2 text-xs">
+        <PlayCircle className="h-4 w-4" />
+        <span className="lowercase">sem vídeo</span>
+      </div>
     </div>
   );
 }

@@ -13,6 +13,8 @@
   --color-accent-hover: #7c3aed;
   --color-on-accent: #0b1220;
   --color-success: #22c55e;
+  /* Série concluída: lavanda, mais clara que o accent pra se destacar dele. */
+  --color-done: #c4b5fd;
   --color-warmup: #f59e0b;
   --color-failure: #ef4444;
   --color-feeder: #a78bfa;
@@ -101,6 +103,32 @@
 
   .animate-celebration-emoji {
     animation: fitlog-emoji 420ms ease-in-out infinite;
+  }
+
+  /* Biblioteca de exercícios: 2 fotos empilhadas (início/fim do movimento).
+     A de cima aparece e some com um fade curto — vira um "loop" sem JS. */
+  @keyframes fitlog-frame-swap {
+    0%,
+    42% {
+      opacity: 0;
+    }
+    50%,
+    92% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  .animate-frame-swap {
+    animation: fitlog-frame-swap 1.8s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-frame-swap {
+      animation: none;
+    }
   }
   input,
   textarea,

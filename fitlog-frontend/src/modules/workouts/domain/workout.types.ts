@@ -20,6 +20,9 @@ export type PlannedSet = {
 export type RoutineExercise = {
   readonly id: string;
   readonly name: string;
+  // Id na biblioteca de exercícios (módulo exercises). null = nome livre,
+  // sem foto da biblioteca.
+  readonly libraryId: string | null;
   readonly notes: string | null;
   readonly rests: RestByType;
   readonly videoUrl: string | null;
@@ -47,9 +50,19 @@ export type SessionSet = {
   readonly completed: boolean;
 };
 
+// Exercício do treino que foi trocado só naquele dia (academia cheia etc.).
+export type ReplacedExercise = {
+  readonly name: string;
+  readonly libraryId: string | null;
+};
+
 export type SessionExercise = {
   readonly id: string;
   readonly name: string;
+  readonly libraryId: string | null;
+  // Preenchido quando o exercício foi substituído durante o treino: guarda o
+  // original da rotina. A rotina em si nunca muda por causa disso.
+  readonly replacedFrom: ReplacedExercise | null;
   readonly notes: string | null;
   readonly rests: RestByType;
   readonly videoUrl: string | null;
