@@ -10,8 +10,6 @@ import { PageTitle } from '@/shared/ui/page-title';
 import { useProfileQuery, useUpdateProfile } from '../hooks/use-profile';
 import { useCurrentAccount, useLogout } from '@/modules/auth/hooks/use-auth';
 
-const APP_VERSION = '1.3.6';
-
 export function ProfilePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -157,7 +155,7 @@ export function ProfilePage() {
           {t('profile.about')}
         </span>{' '}
         <span className="text-fg-muted">
-          {t('profile.aboutBody', { version: APP_VERSION })}
+          {t('profile.aboutBody', { version: __APP_VERSION__ })}
         </span>
       </p>
 

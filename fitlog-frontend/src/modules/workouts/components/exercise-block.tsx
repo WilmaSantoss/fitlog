@@ -7,11 +7,11 @@ import {
   type FieldErrors,
 } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, X } from 'lucide-react';
+import { useState } from 'react';
+import { NotebookPen, Plus, Trash2, X } from 'lucide-react';
 import { Card } from '@/shared/ui/card';
 import { Input } from '@/shared/ui/input';
 import { Select } from '@/shared/ui/select';
-import { FormField } from '@/shared/ui/form-field';
 import { Button } from '@/shared/ui/button';
 import { IconButton } from '@/shared/ui/icon-button';
 import { SET_TYPES, type SetType } from '../domain/workout.types';
@@ -21,6 +21,7 @@ import type {
 } from '../domain/workout.schema';
 import { newId } from '@/shared/lib/uuid';
 import { ExercisePicker } from '@/modules/exercises/components/exercise-picker';
+import { ExerciseNoteDialog } from './exercise-note-dialog';
 
 type Props = {
   index: number;
@@ -64,6 +65,13 @@ export function ExerciseBlock({
     control,
     name: `exercises.${index}.libraryId` as const,
   });
+  // Nota fica num modal; no card só o ícone (destacado quando tem nota).
+  const { field: notesField } = useController({
+    control,
+    name: `exercises.${index}.notes` as const,
+  });
+  const [noteOpen, setNoteOpen] = useState(false);
+  const hasNote = (notesField.value ?? '').trim() !== '';
 
   return (
     <Card className="flex flex-col gap-3">
@@ -77,14 +85,28 @@ export function ExerciseBlock({
           >
             {t('workouts.exerciseName')}
           </label>
-          <IconButton
-            label={t('workouts.removeExercise')}
-            tone="danger"
-            className="-mr-1.5 h-8 w-8"
-            onClick={onRemove}
-          >
-            <Trash2 className="h-4 w-4" />
-          </IconButton>
+          <div className="-mr-1.5 flex items-center gap-0.5">
+            <IconButton
+              label={t(hasNote ? 'workouts.editExerciseNote' : 'workouts.addExerciseNote')}
+              tone={hasNote ? 'accent' : 'default'}
+              className="relative h-8 w-8"
+              aria-pressed={hasNote}
+              onClick={() => setNoteOpen(true)}
+            >
+              <NotebookPen className="h-4 w-4" />
+              {hasNote && (
+                <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-accent" />
+              )}
+            </IconButton>
+            <IconButton
+              label={t('workouts.removeExercise')}
+              tone="danger"
+              className="h-8 w-8"
+              onClick={onRemove}
+            >
+              <Trash2 className="h-4 w-4" />
+            </IconButton>
+          </div>
         </div>
         <ExercisePicker
           id={`exercises.${index}.name`}
@@ -106,18 +128,16 @@ export function ExerciseBlock({
         )}
       </div>
 
-      <FormField
-        label={t('workouts.exerciseNotes')}
-        htmlFor={`exercises.${index}.notes`}
-        optional
-        error={exerciseErrors?.notes?.message}
-      >
-        <Input
-          id={`exercises.${index}.notes`}
-          placeholder="—"
-          {...register(`exercises.${index}.notes` as const)}
-        />
-      </FormField>
+      <ExerciseNoteDialog
+        open={noteOpen}
+        exerciseName={nameField.value}
+        value={notesField.value ?? ''}
+        onCancel={() => setNoteOpen(false)}
+        onSave={(value) => {
+          notesField.onChange(value);
+          setNoteOpen(false);
+        }}
+      />
 
       <div>
         <p className="mb-1 text-[11px] text-fg-subtle">
