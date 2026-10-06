@@ -1,4 +1,11 @@
-import { useDeferredValue, useId, useRef, useState, type KeyboardEvent } from 'react';
+import {
+  useDeferredValue,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { Maximize2, Search } from 'lucide-react';
 import { Input } from '@/shared/ui/input';
@@ -26,7 +33,9 @@ type Props = {
   onFreeName: (name: string) => void;
 };
 
-const SUGGESTIONS = 8;
+// Lista rola dentro de uma altura fixa; o limite só evita renderizar a
+// biblioteca inteira (876) a cada tecla.
+const SUGGESTIONS = 60;
 
 // Campo de nome do exercício com busca na biblioteca. Dois estados:
 //  - vinculado (libraryId): mostra o exercício escolhido com a animação e
@@ -139,10 +148,18 @@ function FreeNameSearch({
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   const deferred = useDeferredValue(name);
   const searchQ = useExerciseSearchQuery(deferred, { limit: SUGGESTIONS });
   const suggestions = deferred.trim() === '' ? [] : (searchQ.data ?? []);
   const showList = open && name.trim() !== '';
+
+  // Setas do teclado: mantém a opção ativa visível dentro da lista que rola.
+  useEffect(() => {
+    listRef.current
+      ?.querySelector(`[data-index="${active}"]`)
+      ?.scrollIntoView({ block: 'nearest' });
+  }, [active]);
 
   function choose(exercise: LibraryExercise) {
     onSelect(exercise);
@@ -199,56 +216,67 @@ function FreeNameSearch({
       </div>
 
       {showList && (
-        <ul
-          id={listId}
-          role="listbox"
+        // mousedown + preventDefault em toda a caixa: clicar numa opção ou
+        // arrastar a barra de rolagem não tira o foco do input (senão o
+        // blur fecha a lista antes do clique contar).
+        <div
+          onMouseDown={(e) => e.preventDefault()}
           className="flex flex-col overflow-hidden rounded-xl border border-line bg-surface-2"
         >
-          {suggestions.map((exercise, i) => (
-            <li
-              key={exercise.id}
-              role="option"
-              aria-selected={i === active}
-              // mousedown + preventDefault: o input não perde o foco antes
-              // do clique (senão o blur fecha a lista e o clique se perde).
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => choose(exercise)}
-              onMouseEnter={() => setActive(i)}
-              className={cn(
-                'flex cursor-pointer items-center gap-3 px-2 py-1.5',
-                i === active && 'bg-accent/10',
-              )}
+          {suggestions.length > 0 && (
+            <ul
+              ref={listRef}
+              id={listId}
+              role="listbox"
+              className="flex max-h-72 flex-col overflow-y-auto overscroll-contain"
             >
-              <ExerciseAnimation
-                exercise={exercise}
-                still
-                className="w-14 shrink-0 rounded-md"
-              />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm text-fg">{exercise.name}</p>
-                <p className="truncate text-[11px] text-fg-subtle">
-                  {exercise.primaryMuscles
-                    .map((m) => t(`exercises.muscles.${m}`))
-                    .join(' · ')}
-                </p>
-              </div>
-            </li>
-          ))}
-          <li
-            role="option"
-            aria-selected={false}
-            onMouseDown={(e) => e.preventDefault()}
+              {suggestions.map((exercise, i) => (
+                <li
+                  key={exercise.id}
+                  data-index={i}
+                  role="option"
+                  aria-selected={i === active}
+                  onClick={() => choose(exercise)}
+                  onMouseEnter={() => setActive(i)}
+                  className={cn(
+                    'flex cursor-pointer items-center gap-3 px-2 py-1.5',
+                    i === active && 'bg-accent/10',
+                  )}
+                >
+                  <ExerciseAnimation
+                    exercise={exercise}
+                    still
+                    className="w-14 shrink-0 rounded-md"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm text-fg">{exercise.name}</p>
+                    <p className="truncate text-[11px] text-fg-subtle">
+                      {exercise.primaryMuscles
+                        .map((m) => t(`exercises.muscles.${m}`))
+                        .join(' · ')}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          {/* Fora da área que rola: sempre visível embaixo da lista. */}
+          <button
+            type="button"
             onClick={() => {
               setOpen(false);
               inputRef.current?.blur();
             }}
-            className="cursor-pointer border-t border-line/60 px-3 py-2 text-xs text-fg-muted hover:text-fg"
+            className={cn(
+              'px-3 py-2 text-left text-xs text-fg-muted hover:text-fg',
+              suggestions.length > 0 && 'border-t border-line/60',
+            )}
           >
             {suggestions.length === 0
               ? t('exercises.pickerNoMatch', { name: name.trim() })
               : t('exercises.pickerUseFree', { name: name.trim() })}
-          </li>
-        </ul>
+          </button>
+        </div>
       )}
 
       {!showList && name.trim() !== '' && (
