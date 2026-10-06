@@ -3,11 +3,10 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'node:path';
-import { readFileSync } from 'node:fs';
-
-const pkg = JSON.parse(
-  readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'),
-) as { version: string };
+// Import (e não readFileSync): o Vite rastreia arquivos importados pelo
+// config e reinicia o servidor de dev quando mudam — subir a versão no
+// package.json já reflete no localhost sem reiniciar à mão.
+import pkg from './package.json' with { type: 'json' };
 
 export default defineConfig({
   define: {
