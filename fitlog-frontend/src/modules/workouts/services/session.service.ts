@@ -54,6 +54,20 @@ export type ExerciseEvolutionPoint = {
 
 export type RoutineExerciseAverages = ReadonlyMap<string, number>;
 
+// Recorde batido numa sessão, comparando com todas as sessões anteriores:
+//  - 'weight': carga maior que a maior já feita no exercício;
+//  - 'reps': com uma carga já usada antes, mais reps do que nunca nela.
+export type SessionRecordKind = 'weight' | 'reps';
+
+export type SessionRecord = {
+  readonly exerciseName: string;
+  readonly kind: SessionRecordKind;
+  readonly weightKg: number;
+  readonly reps: number;
+  // weight: melhor série anterior; reps: máximo de reps anterior nessa carga.
+  readonly previous: PreviousSet;
+};
+
 export type ExerciseReplacement = {
   readonly name: string;
   readonly libraryId: string | null;
@@ -76,6 +90,7 @@ export interface ISessionService {
     exerciseId: string,
     replacement: ExerciseReplacement,
   ): Promise<void>;
+  sessionRecords(sessionId: string): Promise<SessionRecord[]>;
   updateFinishedAt(sessionId: string, finishedAt: string): Promise<void>;
   finish(sessionId: string): Promise<void>;
   syncRoutineWeights(sessionId: string): Promise<void>;
@@ -110,6 +125,19 @@ function lastWeightsByExercise(finished: readonly WorkoutSession[]): LastWeights
     }
   }
   return map;
+}
+
+function isBetterSet(a: PreviousSet, b: PreviousSet): boolean {
+  return a.weightKg > b.weightKg || (a.weightKg === b.weightKg && a.reps > b.reps);
+}
+
+function completedSets(sets: readonly SessionSet[]): PreviousSet[] {
+  const out: PreviousSet[] = [];
+  for (const s of sets) {
+    if (!s.completed || s.actualWeightKg === null || s.actualReps === null) continue;
+    out.push({ weightKg: s.actualWeightKg, reps: s.actualReps });
+  }
+  return out;
 }
 
 function sessionFromRoutine(
@@ -262,6 +290,84 @@ class SessionService implements ISessionService {
       };
     });
     await this.sessions.update(sessionId, { exercises, updatedAt: now });
+  }
+
+  // Exercício feito pela primeira vez não conta — não tem com o que comparar.
+  // Carga nova mas menor que a máxima também não (nunca feita = sem base).
+  async sessionRecords(sessionId: string): Promise<SessionRecord[]> {
+    const session = await this.sessions.getById(sessionId);
+    if (!session) return [];
+    const endedAt = session.finishedAt ?? session.startedAt;
+    const finished = await this.sessions.listFinished();
+
+    // Por exercício: melhor série e máximo de reps por carga, antes de hoje.
+    const history = new Map<
+      string,
+      { best: PreviousSet; maxRepsByWeight: Map<number, number> }
+    >();
+    for (const s of finished) {
+      if (s.id === sessionId) continue;
+      if ((s.finishedAt ?? s.startedAt) > endedAt) continue;
+      for (const ex of s.exercises) {
+        const key = ex.name.trim().toLowerCase();
+        for (const set of completedSets(ex.sets)) {
+          const h = history.get(key);
+          if (!h) {
+            history.set(key, {
+              best: set,
+              maxRepsByWeight: new Map([[set.weightKg, set.reps]]),
+            });
+            continue;
+          }
+          if (isBetterSet(set, h.best)) h.best = set;
+          const prevReps = h.maxRepsByWeight.get(set.weightKg) ?? 0;
+          if (set.reps > prevReps) h.maxRepsByWeight.set(set.weightKg, set.reps);
+        }
+      }
+    }
+
+    const records: SessionRecord[] = [];
+    for (const ex of session.exercises) {
+      const h = history.get(ex.name.trim().toLowerCase());
+      if (!h) continue;
+      // Melhor série de hoje por carga (duas séries de 20 kg → vale a de mais reps).
+      const todayByWeight = new Map<number, number>();
+      for (const set of completedSets(ex.sets)) {
+        const reps = todayByWeight.get(set.weightKg) ?? 0;
+        if (set.reps > reps) todayByWeight.set(set.weightKg, set.reps);
+      }
+      const heaviestBefore = h.best.weightKg;
+      // Carga nova acima da máxima: um recorde só (a mais pesada de hoje).
+      const heavier = [...todayByWeight.entries()]
+        .filter(([w]) => w > heaviestBefore)
+        .sort((a, b) => b[0] - a[0])[0];
+      if (heavier) {
+        records.push({
+          exerciseName: ex.name,
+          kind: 'weight',
+          weightKg: heavier[0],
+          reps: heavier[1],
+          previous: h.best,
+        });
+      }
+      // Mais reps numa carga já usada antes (da mais pesada pra mais leve).
+      const repRecords = [...todayByWeight.entries()]
+        .filter(([w, reps]) => {
+          const before = h.maxRepsByWeight.get(w);
+          return before !== undefined && reps > before;
+        })
+        .sort((a, b) => b[0] - a[0]);
+      for (const [weightKg, reps] of repRecords) {
+        records.push({
+          exerciseName: ex.name,
+          kind: 'reps',
+          weightKg,
+          reps,
+          previous: { weightKg, reps: h.maxRepsByWeight.get(weightKg) ?? 0 },
+        });
+      }
+    }
+    return records;
   }
 
   async updateNotes(sessionId: string, notes: string | null): Promise<void> {

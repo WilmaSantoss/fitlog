@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeftRight, Check, Pencil, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/shared/ui/page-header';
 import { OverflowMenu } from '@/shared/ui/overflow-menu';
@@ -11,12 +11,14 @@ import { cn } from '@/shared/lib/cn';
 import {
   useDeleteSession,
   useSessionQuery,
+  useSessionRecordsQuery,
   useSyncRoutineWeights,
   useUpdateSessionFinishedAt,
   useUpdateSessionSet,
 } from '../hooks/use-sessions';
 import { sessionService } from '../services/session.service';
 import { SetTypePill } from '../components/set-type-pill';
+import { FinishSummaryDialog } from '../components/finish-summary-dialog';
 import {
   datetimeLocalInputToIso,
   formatDate,
@@ -135,6 +137,18 @@ export function SessionDetailPage() {
   const syncRoutineWeights = useSyncRoutineWeights();
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  // Veio do "Concluir" do treino: mostra o modal de recordes antes de tudo.
+  const location = useLocation();
+  const [summaryOpen, setSummaryOpen] = useState(
+    () => (location.state as { justFinished?: boolean } | null)?.justFinished === true,
+  );
+  const recordsQ = useSessionRecordsQuery(id, summaryOpen);
+
+  function closeSummary() {
+    setSummaryOpen(false);
+    // Limpa o state da navegação: voltar/recarregar não reabre o modal.
+    navigate(location.pathname, { replace: true, state: null });
+  }
   const [finishedAtDraft, setFinishedAtDraft] = useState('');
   const [finishedAtError, setFinishedAtError] = useState<string | null>(null);
 
@@ -385,6 +399,11 @@ export function SessionDetailPage() {
         ))}
       </ul>
 
+      <FinishSummaryDialog
+        open={summaryOpen && recordsQ.isSuccess}
+        records={recordsQ.data ?? []}
+        onClose={closeSummary}
+      />
       <ConfirmDialog
         open={confirmDeleteOpen}
         title={t('common.delete')}

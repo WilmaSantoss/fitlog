@@ -89,7 +89,8 @@ export function SessionPage() {
     if (!id) return;
     await finishMutation.mutateAsync(id);
     setFinishOpen(false);
-    navigate(`/treino/historico/${id}`);
+    // justFinished: o detalhe abre o modal de recordes/frase uma vez.
+    navigate(`/treino/historico/${id}`, { state: { justFinished: true } });
     // Após visualizar o detalhe, o usuário volta pra /treino?tab=history pelo botão back
   }
 

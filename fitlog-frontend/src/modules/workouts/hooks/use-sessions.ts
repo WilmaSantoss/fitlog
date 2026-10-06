@@ -25,6 +25,14 @@ export function usePreviousByExerciseQuery(sessionId: string | undefined) {
   });
 }
 
+export function useSessionRecordsQuery(sessionId: string | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: ['sessions', 'records', sessionId ?? null] as const,
+    queryFn: () => (sessionId ? sessionService.sessionRecords(sessionId) : []),
+    enabled: enabled && !!sessionId,
+  });
+}
+
 export function useExerciseSummariesQuery() {
   return useQuery({
     queryKey: KEYS.exerciseSummaries,
